@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- §24: exclude Nobelle databases, health files, credentials and attachment
+     caches from device-transfer/backup so personal data only travels via the
+     user's authorized Google Drive sync. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="file" path="health/" />
+        <exclude domain="file" path="attachments/" />
+        <exclude domain="file" path="credentials/" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="file" path="health/" />
+        <exclude domain="file" path="attachments/" />
+        <exclude domain="file" path="credentials/" />
+    </device-transfer>
+</data-extraction-rules>

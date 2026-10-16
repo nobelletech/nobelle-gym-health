@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nobelle Gym &amp; Health</string>
+    <string name="nav_today">Today</string>
+    <string name="nav_coach">Coach</string>
+    <string name="nav_health">My Health</string>
+    <string name="nav_progress">Progress</string>
+    <string name="nav_profile">Profile</string>
+</resources>
