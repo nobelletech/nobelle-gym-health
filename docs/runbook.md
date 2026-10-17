@@ -33,11 +33,22 @@ adb -s <watch> install android/wear/build/outputs/apk/debug/wear-debug.apk
 
 ## Required owner configuration before sync works
 
-- Google Cloud project with Drive API enabled and OAuth clients for the
-  Android signing fingerprint and the web origin. Nothing is stored in that
-  project; it only gates API access (§12).
-- No secrets are committed. Credentials are entered at runtime via Google
-  sign-in.
+- Google Cloud project with Drive API enabled. No billing account or paid
+  service is required for the current architecture.
+- OAuth consent uses only `https://www.googleapis.com/auth/drive.appdata`, a
+  non-sensitive scope. While publishing status is **Testing**, add the owner's
+  Google email under **Audience → Test users**.
+- Android debug OAuth client for package `com.nobelle.gymhealth.debug` and the
+  SHA-1 of the certificate that actually signs `phone-debug.apk`:
+  `32:75:42:E3:8A:6A:CE:BF:51:AD:77:27:91:30:DC:B4:D8:7E:35:3E`.
+  This was verified from the APK with `apksigner verify --print-certs`.
+- Web OAuth client authorized JavaScript origin: `http://localhost:5173`.
+  The implementation uses Google Identity Services' browser token-client popup,
+  so it requires **no authorized redirect URI**. A deployed production origin
+  will be registered separately after a host is selected.
+- Put the web client ID in `web/.env.local` as `VITE_GOOGLE_CLIENT_ID=...`.
+  Client IDs are identifiers, not secrets. No client secret is placed in the
+  phone or static web app; access tokens remain in browser memory only.
 
 ## Repo hygiene
 

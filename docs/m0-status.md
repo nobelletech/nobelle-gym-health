@@ -24,7 +24,10 @@
 
 ## Pending / blocked on owner (§18)
 
-- Google Cloud project + OAuth clients (Android fingerprint, web origin).
+- Google Cloud project + OAuth clients. Current APK identity: package
+  `com.nobelle.gymhealth.debug`, SHA-1
+  `32:75:42:E3:8A:6A:CE:BF:51:AD:77:27:91:30:DC:B4:D8:7E:35:3E`.
+  Web origin: `http://localhost:5173`; no redirect URI for the GIS token popup.
 - Exact Galaxy Watch model/OS for capability probing.
 - Real Health Connect import test — requires physical phone.
 - Licensed exercise media (60 demos / 12 templates target).

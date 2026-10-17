@@ -12,4 +12,6 @@ keystore.properties
 *.keystore
 node_modules/
 web/dist/
+web/.env.local
+web/.env.*.local
 .DS_Store

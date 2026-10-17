@@ -18,7 +18,7 @@ on every probe.
 | OMRON connect | OMRON → Health Connect | Unverified region variant | — pending | CA-installed variant must be verified |
 | 1byone Health | 1byone → Health Connect | Unverified | — pending | Google Fit bridge may be stale |
 | Google Fit APIs | — | Not used | — | Deprecated end of 2026; via Health Connect only |
-| Drive sync | `drive.appdata` scope | Architecture done | — pending OAuth client | Google Cloud project needed — **owner action** |
+| Drive sync | non-sensitive `drive.appdata` scope | Web REST adapter implemented; Android adapter pending | Web unit-tested; end-to-end pending OAuth client | No backend, billing or broad Drive scope |
 | On-device AI insights | Google AI Edge / MediaPipe LLM | Designed | — pending supported phone | Deterministic template fallback required |
 | ECG / BP (Health Monitor) | — | Not assumed | — | Proprietary; no API assumed |
 | Camera pose cues | On-device pose (ML Kit/LiteRT) | Experimental | — | Separate consent + indicator (§8D) |
