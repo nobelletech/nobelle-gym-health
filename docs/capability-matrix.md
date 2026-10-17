@@ -18,7 +18,7 @@ on every probe.
 | OMRON connect | OMRON → Health Connect | Unverified region variant | — pending | CA-installed variant must be verified |
 | 1byone Health | 1byone → Health Connect | Unverified | — pending | Google Fit bridge may be stale |
 | Google Fit APIs | — | Not used | — | Deprecated end of 2026; via Health Connect only |
-| Drive sync | non-sensitive `drive.appdata` scope | Web REST adapter implemented; Android adapter pending | Web OAuth + empty `appDataFolder` listing verified 2026-10-16 with owner's test account; upload/read/delete pending | No backend, billing or broad Drive scope |
+| Drive sync | non-sensitive `drive.appdata` scope | Web REST adapter implemented; Android adapter pending | Owner-account web OAuth, listing, and 148-byte upload/read/SHA-256/delete round trip verified 2026-10-16; network-capture inspection pending | No backend, billing or broad Drive scope |
 | On-device AI insights | Google AI Edge / MediaPipe LLM | Designed | — pending supported phone | Deterministic template fallback required |
 | ECG / BP (Health Monitor) | — | Not assumed | — | Proprietary; no API assumed |
 | Camera pose cues | On-device pose (ML Kit/LiteRT) | Experimental | — | Separate consent + indicator (§8D) |
@@ -26,5 +26,6 @@ on every probe.
 ## Owner actions that block verification
 
 1. Exact Galaxy Watch model + OS.
-3. Test Google account and (optionally) Play developer account.
+2. Test Android phone model/OS and installed health-source app versions.
+3. Google Play developer account (release only; not needed for development).
 4. Installed OneTouch/OMRON/1byone regional app versions on the test phone.

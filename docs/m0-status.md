@@ -22,9 +22,11 @@
 - Verified: `:android:phone:assembleDebug`, `:android:wear:assembleDebug`,
   JVM module tests, `web` production build — all green on this machine.
 
-- Verified 2026-10-16: owner test account authorized the non-sensitive
-  `drive.appdata` scope from `http://localhost:5173`, and the web client listed
-  the empty user-owned `appDataFolder`. Upload/read/delete remains pending.
+- Verified 2026-10-16 with the owner's test account: the web client authorized
+  only the non-sensitive `drive.appdata` scope, listed the user-owned
+  `appDataFolder`, uploaded a 148-byte non-personal diagnostic payload, read it
+  back, matched its SHA-256 checksum and deleted the temporary file. External
+  network-capture inspection remains pending and is not implied by this test.
 
 ## Pending / blocked on owner (§18)
 
