@@ -9,8 +9,8 @@ on every probe.
 | Health Connect availability | `HealthConnectClient.getSdkStatus` | Implemented probe | — pending device | `CapabilityProbe` in `core-health` |
 | Steps/activity import | Health Connect read | Designed | — pending | Per-category permission |
 | Samsung Health records | Samsung Health → Health Connect | Designed | — pending | Sharing must be enabled in Samsung Health |
-| Live watch heart rate | Wear OS Health Services | Designed | Galaxy Watch8 SM-L330; hardware test pending | Firmware/build `L330XXS2AZF4`; Wear OS version still to confirm |
-| Watch GPS | Health Services ExerciseClient | Designed | Galaxy Watch8 SM-L330; hardware test pending | Capability probe required |
+| Live watch heart rate | Wear OS Health Services | Designed | Galaxy Watch8 SM-L330, Wear OS 6.0; hardware test pending | Firmware/build `L330XXS2AZF4` |
+| Watch GPS | Health Services ExerciseClient | Designed | Galaxy Watch8 SM-L330, Wear OS 6.0; hardware test pending | Capability probe required |
 | Passive monitoring | Health Services passive listener | Designed | — pending | Battery measured before claims |
 | Samsung Health Data SDK | Approved partnership | Approval-dependent | — | Optional adapter; app ships without it |
 | Samsung Sensor SDK | Approved partnership | Approval-dependent | — | Optional adapter |
@@ -25,7 +25,6 @@ on every probe.
 
 ## Owner actions that block verification
 
-1. Galaxy Watch8 SM-L330 Wear OS version (firmware/build recorded as `L330XXS2AZF4`).
-2. Installed health-source app versions on Galaxy S25 Ultra SM-S938W (Android 16).
+1. Installed health-source app versions on Galaxy S25 Ultra SM-S938W (Android 16).
 3. Google Play developer account (release only; not needed for development).
 4. Installed OneTouch/OMRON/1byone regional app versions on the test phone.

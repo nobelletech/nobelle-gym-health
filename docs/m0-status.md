@@ -31,8 +31,8 @@
 ## Pending / blocked on owner (§18)
 
 - Device supplied: Samsung Galaxy S25 Ultra SM-S938W, Android 16.
-- Watch supplied: Samsung Galaxy Watch8 SM-L330, firmware/build
-  `L330XXS2AZF4`; exact Wear OS version still pending.
+- Watch supplied: Samsung Galaxy Watch8 SM-L330, Wear OS 6.0,
+  firmware/build `L330XXS2AZF4`.
 - Real Health Connect and Wear Health Services tests require installing on this hardware.
 - Licensed exercise media (60 demos / 12 templates target).
 - On-device AI model selection + hardware validation.
