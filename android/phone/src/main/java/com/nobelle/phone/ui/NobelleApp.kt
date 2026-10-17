@@ -37,7 +37,12 @@ enum class Destination(val route: String, val label: String, val icon: ImageVect
 }
 
 @Composable
-fun NobelleApp() {
+fun NobelleApp(
+    driveStatus: String,
+    driveConnected: Boolean,
+    onConnectDrive: () -> Unit,
+    onDisconnectDrive: () -> Unit,
+) {
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
     val current = backStack?.destination?.route
@@ -71,7 +76,14 @@ fun NobelleApp() {
             composable(Destination.COACH.route) { CoachScreen() }
             composable(Destination.HEALTH.route) { MyHealthScreen() }
             composable(Destination.PROGRESS.route) { ProgressScreen() }
-            composable(Destination.PROFILE.route) { ProfileScreen() }
+            composable(Destination.PROFILE.route) {
+                ProfileScreen(
+                    driveStatus = driveStatus,
+                    driveConnected = driveConnected,
+                    onConnectDrive = onConnectDrive,
+                    onDisconnectDrive = onDisconnectDrive,
+                )
+            }
         }
     }
 }

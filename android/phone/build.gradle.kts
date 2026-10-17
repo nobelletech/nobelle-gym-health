@@ -40,6 +40,7 @@ dependencies {
     implementation(project(":android:core-model"))
     implementation(project(":android:core-coaching"))
     implementation(project(":android:core-health"))
+    implementation(project(":android:core-sync"))
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
@@ -51,6 +52,7 @@ dependencies {
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.navigation.compose)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.play.services.auth)
 
     debugImplementation(libs.compose.ui.tooling)
     testImplementation(libs.junit)

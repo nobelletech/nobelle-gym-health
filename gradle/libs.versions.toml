@@ -13,6 +13,7 @@ healthConnect = "1.1.0"
 healthServices = "1.1.0"
 wearCompose = "1.5.0"
 playServicesWearable = "19.0.0"
+playServicesAuth = "21.1.1"
 hilt = "2.52"
 hiltNavigation = "1.2.0"
 kotlinxCoroutines = "1.10.2"
@@ -52,6 +53,7 @@ wear-compose-foundation = { group = "androidx.wear.compose", name = "compose-fou
 wear-compose-navigation = { group = "androidx.wear.compose", name = "compose-navigation", version.ref = "wearCompose" }
 wear-health-services = { group = "androidx.health", name = "health-services-client", version.ref = "healthServices" }
 play-services-wearable = { group = "com.google.android.gms", name = "play-services-wearable", version.ref = "playServicesWearable" }
+play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
 
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
