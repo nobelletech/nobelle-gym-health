@@ -22,12 +22,12 @@
 - Verified: `:android:phone:assembleDebug`, `:android:wear:assembleDebug`,
   JVM module tests, `web` production build — all green on this machine.
 
+- Verified 2026-10-16: owner test account authorized the non-sensitive
+  `drive.appdata` scope from `http://localhost:5173`, and the web client listed
+  the empty user-owned `appDataFolder`. Upload/read/delete remains pending.
+
 ## Pending / blocked on owner (§18)
 
-- Google Cloud project + OAuth clients. Current APK identity: package
-  `com.nobelle.gymhealth.debug`, SHA-1
-  `32:75:42:E3:8A:6A:CE:BF:51:AD:77:27:91:30:DC:B4:D8:7E:35:3E`.
-  Web origin: `http://localhost:5173`; no redirect URI for the GIS token popup.
 - Exact Galaxy Watch model/OS for capability probing.
 - Real Health Connect import test — requires physical phone.
 - Licensed exercise media (60 demos / 12 templates target).
