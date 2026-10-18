@@ -61,6 +61,16 @@
   Weight and Sleep remained denied. A manual 30-day import completed without a
   crash but found zero source records. This verifies availability, contextual
   permission and an honest empty-data result, not a successful record import.
+- Health Connect also reported available on Galaxy S25 Ultra `SM-S938W`,
+  Android 16. With only Steps selected and granted, a manual 30-day import read
+  and encrypted 2,540 real source records. Displayed records included counts,
+  measured timestamps, UTC offsets, source package and imported provenance.
+  The reported source namespace was
+  `com.android.healthconnect.phone.j4538d18bb8713d1a94dacd6321e1e6b6`;
+  it is not relabelled as Samsung Health without stronger lineage evidence.
+- Repeating the same import reported 0 new or updated records from the same
+  2,540 source records, verifying deterministic IDs and idempotent local/outbox
+  writes.
 - Android hardware tests passed: 3 encrypted-key tests and 17 Room migration,
   owner-isolation, transition, outbox and tombstone tests. Fourteen phone JVM
   tests also passed.
@@ -68,6 +78,5 @@
 ## Pending
 
 - Automatic Drive outbox upload, acknowledgements, retry/backoff and restore.
-- A real Health Connect source-record import on the Galaxy S25 Ultra and watch
-  enrollment.
+- Watch installation, capability probing and enrollment.
 - Independent network-capture inspection.

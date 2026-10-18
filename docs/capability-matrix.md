@@ -6,8 +6,8 @@ on every probe.
 
 | Capability | Route | Status | Verified on | Notes |
 | --- | --- | --- | --- | --- |
-| Health Connect availability | `HealthConnectClient.getSdkStatus` | Implemented and hardware-tested | Samsung SM-S928N, Android 16, 2026-10-18; Galaxy S25 Ultra still pending | Built-in provider reported available |
-| Steps/activity import | Health Connect read | Implemented; source-record verification pending | Samsung SM-S928N granted Steps read permission, 2026-10-18 | Manual 30-day import found 0 source records; permission is not treated as data availability |
+| Health Connect availability | `HealthConnectClient.getSdkStatus` | Implemented and hardware-tested | Samsung SM-S928N and Galaxy S25 Ultra SM-S938W, Android 16, 2026-10-18 | Built-in provider reported available on both devices |
+| Steps/activity import | Health Connect read | Implemented and hardware-tested | Galaxy S25 Ultra SM-S938W, Android 16, 2026-10-18 | Steps-only grant imported 2,540 real 30-day source records; immediate repeat imported 0 changes from the same 2,540 records |
 | Samsung Health records | Samsung Health → Health Connect | Designed | — pending | Sharing must be enabled in Samsung Health |
 | Live watch heart rate | Wear OS Health Services | Designed | Galaxy Watch8 SM-L330, Wear OS 6.0; hardware test pending | Firmware/build `L330XXS2AZF4` |
 | Watch GPS | Health Services ExerciseClient | Designed | Galaxy Watch8 SM-L330, Wear OS 6.0; hardware test pending | Capability probe required |
