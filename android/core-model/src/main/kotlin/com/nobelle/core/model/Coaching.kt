@@ -80,6 +80,9 @@ data class PlannedSession(
 enum class WorkoutState { PLANNED, ACTIVE, PAUSED, COMPLETED, DISCARDED }
 
 @Serializable
+enum class SetType { STANDARD, WARM_UP, DROP, FAILURE, TIMED }
+
+@Serializable
 data class WorkoutSession(
     val id: String,
     val ownerUID: String,
@@ -89,6 +92,7 @@ data class WorkoutSession(
     val startedUtc: Instant? = null,
     val endedUtc: Instant? = null,
     val startTimeZone: String? = null,
+    val sourceOffsetMinutes: Int? = null,
     val originDeviceId: String,
     val leaseOwnerDeviceId: String? = null, // canonical live controller (§13)
     val sequence: Long = 0,
@@ -115,6 +119,11 @@ data class ExerciseSet(
     val inferenceConfidence: Double? = null,
     val painFlag: Boolean = false,
     val notes: String? = null,
+    val restSec: Int? = null,
+    val tempo: String? = null,
+    val setType: SetType = SetType.STANDARD,
+    val groupId: String? = null, // same id groups a superset/circuit
+    val substitutedForExerciseId: String? = null,
     val revision: Long = 1,
 )
 

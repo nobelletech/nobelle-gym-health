@@ -26,6 +26,8 @@ import com.nobelle.phone.ui.screens.MyHealthScreen
 import com.nobelle.phone.ui.screens.ProfileScreen
 import com.nobelle.phone.ui.screens.ProgressScreen
 import com.nobelle.phone.ui.screens.TodayScreen
+import com.nobelle.phone.workout.SetEntryInput
+import com.nobelle.phone.workout.WorkoutViewModel
 
 // Primary navigation (§3): Today | Coach | My Health | Progress | Profile
 enum class Destination(val route: String, val label: String, val icon: ImageVector) {
@@ -45,6 +47,12 @@ fun NobelleApp(
     onConnectDrive: () -> Unit,
     onDisconnectDrive: () -> Unit,
     onTestDrive: () -> Unit,
+    workout: WorkoutViewModel.WorkoutUiState,
+    onStartWorkout: () -> Unit,
+    onPauseOrResumeWorkout: () -> Unit,
+    onFinishWorkout: () -> Unit,
+    onDiscardWorkout: () -> Unit,
+    onAddSet: (SetEntryInput) -> Unit,
 ) {
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
@@ -75,7 +83,16 @@ fun NobelleApp(
             startDestination = Destination.TODAY.route,
             modifier = Modifier.padding(padding),
         ) {
-            composable(Destination.TODAY.route) { TodayScreen() }
+            composable(Destination.TODAY.route) {
+                TodayScreen(
+                    workout = workout,
+                    onStart = onStartWorkout,
+                    onPauseOrResume = onPauseOrResumeWorkout,
+                    onFinish = onFinishWorkout,
+                    onDiscard = onDiscardWorkout,
+                    onAddSet = onAddSet,
+                )
+            }
             composable(Destination.COACH.route) { CoachScreen() }
             composable(Destination.HEALTH.route) { MyHealthScreen() }
             composable(Destination.PROGRESS.route) { ProgressScreen() }

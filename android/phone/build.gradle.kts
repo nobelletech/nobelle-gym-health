@@ -48,6 +48,7 @@ dependencies {
     implementation(project(":android:core-coaching"))
     implementation(project(":android:core-health"))
     implementation(project(":android:core-sync"))
+    implementation(project(":android:core-data"))
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
@@ -59,10 +60,15 @@ dependencies {
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.navigation.compose)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.app.auth)
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    implementation(libs.sqlcipher.android)
 
     debugImplementation(libs.compose.ui.tooling)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.espresso.core)
 }

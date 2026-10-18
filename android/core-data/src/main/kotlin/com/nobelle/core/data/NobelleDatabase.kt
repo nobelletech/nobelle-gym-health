@@ -1,126 +1,133 @@
 package com.nobelle.core.data
 
-import androidx.room.Dao
 import androidx.room.Database
-import androidx.room.Entity
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.PrimaryKey
-import androidx.room.Query
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
-/** Durable session + outbox storage (§12/§13). High-rate samples are chunked
- *  separately; this DB holds session state and pending sync operations. */
-
-@Entity(tableName = "workout_sessions")
-data class WorkoutSessionEntity(
-    @PrimaryKey val id: String,
-    val ownerUID: String,
-    val state: String,
-    val startedUtc: Long?,
-    val endedUtc: Long?,
-    val sequence: Long,
-    val payloadJson: String,
-    val revision: Long,
-)
-
-@Entity(tableName = "gym_visits")
-data class GymVisitEntity(
-    @PrimaryKey val id: String,
-    val ownerUID: String,
-    val startInstant: Long,
-    val endInstant: Long?,
-    val localAttendanceDate: String,
-    val confirmed: Boolean,
-    val payloadJson: String,
-    val revision: Long,
-    val deletedUtc: Long?,
-)
-
-@Entity(tableName = "fasting_sessions")
-data class FastingSessionEntity(
-    @PrimaryKey val id: String,
-    val ownerUID: String,
-    val actualStartInstant: Long,
-    val actualEndInstant: Long?,
-    val status: String,
-    val payloadJson: String,
-    val revision: Long,
-    val deletedUtc: Long?,
-)
-
-@Entity(tableName = "health_observations")
-data class HealthObservationEntity(
-    @PrimaryKey val id: String,
-    val ownerUID: String,
-    val marker: String,
-    val measuredUtc: Long,
-    val sourceNamespace: String?,
-    val sourceRecordId: String?,
-    val payloadJson: String,
-    val revision: Long,
-    val deletedUtc: Long?,
-)
-
-@Entity(tableName = "sync_outbox")
-data class SyncOutboxEntity(
-    @PrimaryKey val operationUuid: String,
-    val ownerUID: String,
-    val entityId: String,
-    val entityType: String,
-    val state: String,
-    val attempts: Int,
-    val lastError: String?,
-    val createdUtc: Long,
-    val payloadJson: String,
-)
-
-@Entity(tableName = "deletion_tombstones")
-data class TombstoneEntity(
-    @PrimaryKey val entityId: String,
-    val entityType: String,
-    val ownerUID: String,
-    val deletedUtc: Long,
-    val operationUuid: String,
-)
-
-@Dao
-interface OutboxDao {
-    @Insert(onConflict = OnConflictStrategy.IGNORE) // idempotent by operationUuid
-    suspend fun enqueue(op: SyncOutboxEntity): Long
-
-    @Query("SELECT * FROM sync_outbox WHERE state = 'PENDING' ORDER BY createdUtc LIMIT :limit")
-    suspend fun pending(limit: Int = 100): List<SyncOutboxEntity>
-
-    @Query("UPDATE sync_outbox SET state = :state, attempts = attempts + 1, lastError = :error WHERE operationUuid = :id")
-    suspend fun markState(id: String, state: String, error: String? = null)
-}
-
-@Dao
-interface SessionDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(s: WorkoutSessionEntity)
-
-    @Query("SELECT * FROM workout_sessions WHERE id = :id")
-    suspend fun byId(id: String): WorkoutSessionEntity?
-
-    @Query("SELECT * FROM workout_sessions WHERE state IN ('ACTIVE','PAUSED') LIMIT 1")
-    suspend fun activeSession(): WorkoutSessionEntity?
-}
-
+/** Durable owner-scoped working store. Never installed with a destructive
+ *  fallback: every upgrade is an explicit, data-preserving migration. */
 @Database(
     entities = [
         WorkoutSessionEntity::class,
+        WorkoutSetEntity::class,
         GymVisitEntity::class,
         FastingSessionEntity::class,
         HealthObservationEntity::class,
         SyncOutboxEntity::class,
         TombstoneEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class NobelleDatabase : RoomDatabase() {
     abstract fun outbox(): OutboxDao
     abstract fun sessions(): SessionDao
+    abstract fun workoutSets(): WorkoutSetDao
+    abstract fun gymVisits(): GymVisitDao
+    abstract fun fastingSessions(): FastingSessionDao
+    abstract fun healthObservations(): HealthObservationDao
+    abstract fun tombstones(): TombstoneDao
+
+    companion object {
+        /** v1 -> v2: add workout_sets, owner/state indexes, and rebuild the
+         *  session/visit/fasting/observation and tombstone tables with
+         *  composite owner keys so INSERT OR REPLACE can never cross accounts.
+         *  All v1 rows are preserved. Indexes are created only after the
+         *  rebuilt tables are renamed, so none target dropped tables. */
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                rebuildWithCompositeOwnerKey(
+                    db, "workout_sessions",
+                    "`ownerUID` TEXT NOT NULL, `id` TEXT NOT NULL, `state` TEXT NOT NULL, " +
+                        "`startedUtc` INTEGER, `endedUtc` INTEGER, `sequence` INTEGER NOT NULL, " +
+                        "`payloadJson` TEXT NOT NULL, `revision` INTEGER NOT NULL",
+                    "`ownerUID`, `id`, `state`, `startedUtc`, `endedUtc`, `sequence`, `payloadJson`, `revision`",
+                )
+                rebuildWithCompositeOwnerKey(
+                    db, "gym_visits",
+                    "`ownerUID` TEXT NOT NULL, `id` TEXT NOT NULL, `startInstant` INTEGER NOT NULL, " +
+                        "`endInstant` INTEGER, `localAttendanceDate` TEXT NOT NULL, `confirmed` INTEGER NOT NULL, " +
+                        "`payloadJson` TEXT NOT NULL, `revision` INTEGER NOT NULL, `deletedUtc` INTEGER",
+                    "`ownerUID`, `id`, `startInstant`, `endInstant`, `localAttendanceDate`, `confirmed`, `payloadJson`, `revision`, `deletedUtc`",
+                )
+                rebuildWithCompositeOwnerKey(
+                    db, "fasting_sessions",
+                    "`ownerUID` TEXT NOT NULL, `id` TEXT NOT NULL, `actualStartInstant` INTEGER NOT NULL, " +
+                        "`actualEndInstant` INTEGER, `status` TEXT NOT NULL, `payloadJson` TEXT NOT NULL, " +
+                        "`revision` INTEGER NOT NULL, `deletedUtc` INTEGER",
+                    "`ownerUID`, `id`, `actualStartInstant`, `actualEndInstant`, `status`, `payloadJson`, `revision`, `deletedUtc`",
+                )
+                rebuildWithCompositeOwnerKey(
+                    db, "health_observations",
+                    "`ownerUID` TEXT NOT NULL, `id` TEXT NOT NULL, `marker` TEXT NOT NULL, " +
+                        "`measuredUtc` INTEGER NOT NULL, `sourceNamespace` TEXT, `sourceRecordId` TEXT, " +
+                        "`payloadJson` TEXT NOT NULL, `revision` INTEGER NOT NULL, `deletedUtc` INTEGER",
+                    "`ownerUID`, `id`, `marker`, `measuredUtc`, `sourceNamespace`, `sourceRecordId`, `payloadJson`, `revision`, `deletedUtc`",
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_workout_sessions_ownerUID_state` " +
+                        "ON `workout_sessions` (`ownerUID`, `state`)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_gym_visits_ownerUID_localAttendanceDate` " +
+                        "ON `gym_visits` (`ownerUID`, `localAttendanceDate`)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_fasting_sessions_ownerUID_status` " +
+                        "ON `fasting_sessions` (`ownerUID`, `status`)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_health_observations_ownerUID_marker` " +
+                        "ON `health_observations` (`ownerUID`, `marker`)"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `workout_sets` (" +
+                        "`ownerUID` TEXT NOT NULL, `id` TEXT NOT NULL, `sessionId` TEXT NOT NULL, " +
+                        "`completedUtc` INTEGER, `payloadJson` TEXT NOT NULL, `revision` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`ownerUID`, `id`))"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_workout_sets_ownerUID_sessionId` " +
+                        "ON `workout_sets` (`ownerUID`, `sessionId`)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_sync_outbox_ownerUID_state_createdUtc` " +
+                        "ON `sync_outbox` (`ownerUID`, `state`, `createdUtc`)"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `deletion_tombstones_new` (" +
+                        "`ownerUID` TEXT NOT NULL, `entityType` TEXT NOT NULL, `entityId` TEXT NOT NULL, " +
+                        "`deletedUtc` INTEGER NOT NULL, `operationUuid` TEXT NOT NULL, " +
+                        "PRIMARY KEY(`ownerUID`, `entityType`, `entityId`))"
+                )
+                db.execSQL(
+                    "INSERT INTO `deletion_tombstones_new` (`ownerUID`, `entityType`, `entityId`, `deletedUtc`, `operationUuid`) " +
+                        "SELECT `ownerUID`, `entityType`, `entityId`, `deletedUtc`, `operationUuid` FROM `deletion_tombstones`"
+                )
+                db.execSQL("DROP TABLE `deletion_tombstones`")
+                db.execSQL("ALTER TABLE `deletion_tombstones_new` RENAME TO `deletion_tombstones`")
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_deletion_tombstones_operationUuid` " +
+                        "ON `deletion_tombstones` (`operationUuid`)"
+                )
+            }
+        }
+
+        /** Rebuilds [table] as `<table>_new` with `PRIMARY KEY(ownerUID, id)`,
+         *  copies every v1 column, then swaps the tables. */
+        private fun rebuildWithCompositeOwnerKey(
+            db: SupportSQLiteDatabase,
+            table: String,
+            columnDefs: String,
+            columnList: String,
+        ) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `${table}_new` ($columnDefs, PRIMARY KEY(`ownerUID`, `id`))"
+            )
+            db.execSQL("INSERT INTO `${table}_new` ($columnList) SELECT $columnList FROM `$table`")
+            db.execSQL("DROP TABLE `$table`")
+            db.execSQL("ALTER TABLE `${table}_new` RENAME TO `$table`")
+        }
+    }
 }

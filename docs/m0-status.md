@@ -9,8 +9,8 @@
 - Wear OS app shell: quick start, gym check-in, fasting entry points.
 - `core-model`: all §13 contracts plus GymVisit (§20), FastingSchedule/
   FastingSession (§21), InsightRecord (§26), provenance labels.
-- `core-data`: Room schema v1 (sessions, visits, fasts, observations, outbox,
-  tombstones) with exported schema.
+- `core-data`: Room schema v2 (sessions, sets, visits, fasts, observations,
+  owner-scoped outbox and tombstones) with exported schemas and migration.
 - `core-health`: runtime `CapabilityProbe` for Health Connect.
 - `drive-sync`: `DriveStore` boundary, immutable `SyncEvent` codec, opaque
   naming, paged listing contract.
@@ -29,7 +29,9 @@
 - Verified 2026-10-17 on Galaxy S25 Ultra SM-S938W: Android browser-PKCE OAuth
   authorized only `drive.appdata`; Nobelle uploaded a non-personal `SyncEvent`,
   read it back exactly and deleted the temporary file. External network-capture
-  inspection remains pending and is not implied by this functional test.
+inspection remains pending and is not implied by this functional test.
+
+M1 offline-core verification is recorded separately in `docs/m1-status.md`.
 
 ## Pending / blocked on owner (§18)
 

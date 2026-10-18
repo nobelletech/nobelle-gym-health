@@ -6,6 +6,7 @@
     <!-- Personal health DB, watch companion app data are excluded from
          auto-backup per §24 (explicit Drive sync only). -->
     <application
+        android:name=".NobelleApplication"
         android:allowBackup="false"
         android:fullBackupContent="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
