@@ -13,11 +13,12 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         WorkoutSetEntity::class,
         GymVisitEntity::class,
         FastingSessionEntity::class,
+        FastingScheduleEntity::class,
         HealthObservationEntity::class,
         SyncOutboxEntity::class,
         TombstoneEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class NobelleDatabase : RoomDatabase() {
@@ -26,6 +27,7 @@ abstract class NobelleDatabase : RoomDatabase() {
     abstract fun workoutSets(): WorkoutSetDao
     abstract fun gymVisits(): GymVisitDao
     abstract fun fastingSessions(): FastingSessionDao
+    abstract fun fastingSchedules(): FastingScheduleDao
     abstract fun healthObservations(): HealthObservationDao
     abstract fun tombstones(): TombstoneDao
 
@@ -110,6 +112,23 @@ abstract class NobelleDatabase : RoomDatabase() {
                 db.execSQL(
                     "CREATE UNIQUE INDEX IF NOT EXISTS `index_deletion_tombstones_operationUuid` " +
                         "ON `deletion_tombstones` (`operationUuid`)"
+                )
+            }
+        }
+
+        /** v2 -> v3: durable fasting schedules (opt-in eating-window planning
+         *  context; never auto-starts anything). Pure additive table+index. */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `fasting_schedules` (" +
+                        "`ownerUID` TEXT NOT NULL, `id` TEXT NOT NULL, `enabled` INTEGER NOT NULL, " +
+                        "`payloadJson` TEXT NOT NULL, `revision` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`ownerUID`, `id`))"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_fasting_schedules_ownerUID_enabled` " +
+                        "ON `fasting_schedules` (`ownerUID`, `enabled`)"
                 )
             }
         }

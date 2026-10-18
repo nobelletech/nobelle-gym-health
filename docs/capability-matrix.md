@@ -24,6 +24,7 @@ on every probe.
 | Offline manual workout | Owner-scoped Room repositories | Implemented and hardware-tested | Samsung SM-S928N, Android 16, 2026-10-18 | Start, set logging, pause, force-stop recovery, resume and finish verified; automatic Drive outbox upload remains pending |
 | Exercise selection and set defaults | Local reviewed preset catalogue | Implemented and hardware-tested | Samsung SM-S928N, Android 16, 2026-10-18 | 105 searchable A-Z presets; editable convenience defaults; load is never guessed; manual entry remains available |
 | Gym attendance | Owner-scoped encrypted Room repository | Implemented and hardware-tested | Samsung SM-S928N, Android 16, 2026-10-18 | Log now, end, backdate, same-day deduplication and deletion persistence verified; category/date/time pickers and manual category supported |
+| Optional fasting tracker | Owner-scoped encrypted Room repository | Implemented and hardware-tested | Samsung SM-S928N, Android 16, 2026-10-18 | Explicit opt-in; schedule persistence, manual start, restart recovery, cancel, 12-hour backdate and deletion verified; no automatic start/end |
 | On-device AI insights | Google AI Edge / MediaPipe LLM | Designed | — pending supported phone | Deterministic template fallback required |
 | ECG / BP (Health Monitor) | — | Not assumed | — | Proprietary; no API assumed |
 | Camera pose cues | On-device pose (ML Kit/LiteRT) | Experimental | — | Separate consent + indicator (§8D) |

@@ -73,6 +73,19 @@ data class FastingSessionEntity(
 )
 
 @Entity(
+    tableName = "fasting_schedules",
+    primaryKeys = ["ownerUID", "id"],
+    indices = [Index(value = ["ownerUID", "enabled"])],
+)
+data class FastingScheduleEntity(
+    val ownerUID: String,
+    val id: String,
+    val enabled: Boolean,
+    val payloadJson: String,
+    val revision: Long,
+)
+
+@Entity(
     tableName = "health_observations",
     primaryKeys = ["ownerUID", "id"],
     indices = [Index(value = ["ownerUID", "marker"])],

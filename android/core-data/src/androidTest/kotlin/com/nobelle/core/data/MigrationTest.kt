@@ -98,6 +98,60 @@ class MigrationTest {
         db.close()
     }
 
+    @Test
+    fun migrate2To3CreatesScheduleTableAndPreservesRows() {
+        helper.createDatabase(TEST_DB, 2).apply {
+            execSQL(
+                "INSERT INTO workout_sessions (ownerUID, id, state, startedUtc, endedUtc, sequence, payloadJson, revision) " +
+                    "VALUES ('owner-a', 's1', 'COMPLETED', 1700000000000, 1700003600000, 4, '{\"id\":\"s1\"}', 3)"
+            )
+            execSQL(
+                "INSERT INTO gym_visits (ownerUID, id, startInstant, endInstant, localAttendanceDate, confirmed, payloadJson, revision, deletedUtc) " +
+                    "VALUES ('owner-a', 'v1', 1700000000000, 1700003600000, '2023-11-14', 1, '{\"id\":\"v1\"}', 1, NULL)"
+            )
+            execSQL(
+                "INSERT INTO fasting_sessions (ownerUID, id, actualStartInstant, actualEndInstant, status, payloadJson, revision, deletedUtc) " +
+                    "VALUES ('owner-a', 'f1', 1700000000000, 1700007200000, 'COMPLETED', '{\"id\":\"f1\"}', 2, NULL)"
+            )
+            close()
+        }
+
+        // Validates the migrated DB byte-for-byte against Room's exported v3 schema.
+        val db = helper.runMigrationsAndValidate(TEST_DB, 3, true, NobelleDatabase.MIGRATION_2_3)
+
+        db.query("SELECT ownerUID, state, revision FROM workout_sessions WHERE id = 's1'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("owner-a", cursor.getString(0))
+            assertEquals("COMPLETED", cursor.getString(1))
+            assertEquals(3L, cursor.getLong(2))
+        }
+        db.query("SELECT ownerUID, localAttendanceDate FROM gym_visits WHERE id = 'v1'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("owner-a", cursor.getString(0))
+            assertEquals("2023-11-14", cursor.getString(1))
+        }
+        db.query("SELECT ownerUID, status FROM fasting_sessions WHERE id = 'f1'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("owner-a", cursor.getString(0))
+            assertEquals("COMPLETED", cursor.getString(1))
+        }
+
+        // The new schedule table is writable and owner-composite-keyed.
+        db.execSQL(
+            "INSERT INTO fasting_schedules (ownerUID, id, enabled, payloadJson, revision) " +
+                "VALUES ('owner-a', 'sched-1', 1, '{\"id\":\"sched-1\"}', 1)"
+        )
+        db.execSQL(
+            "INSERT INTO fasting_schedules (ownerUID, id, enabled, payloadJson, revision) " +
+                "VALUES ('owner-b', 'sched-1', 0, '{\"id\":\"sched-1\"}', 1)"
+        )
+        db.query("SELECT COUNT(*) FROM fasting_schedules WHERE id = 'sched-1'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(2, cursor.getInt(0))
+        }
+        db.close()
+    }
+
     private companion object {
         const val TEST_DB = "migration-test"
     }

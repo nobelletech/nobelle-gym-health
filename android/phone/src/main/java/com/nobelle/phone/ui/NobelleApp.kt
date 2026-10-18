@@ -21,6 +21,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.nobelle.phone.fasting.FastingBackdateInput
+import com.nobelle.phone.fasting.FastingViewModel
 import com.nobelle.phone.gym.GymVisitInput
 import com.nobelle.phone.gym.GymVisitViewModel
 import com.nobelle.phone.ui.screens.CoachScreen
@@ -61,6 +63,15 @@ fun NobelleApp(
     onEndVisit: (String) -> Unit,
     onEditVisit: (String, GymVisitInput) -> Unit,
     onDeleteVisit: (String) -> Unit,
+    fasting: FastingViewModel.FastingUiState,
+    onFastingEnable: (fastingHours: Int, startLocalTime: String) -> Unit,
+    onFastingDisable: () -> Unit,
+    onFastingStart: () -> Unit,
+    onFastingEnd: () -> Unit,
+    onFastingCancel: () -> Unit,
+    onFastingBackdate: (FastingBackdateInput) -> Unit,
+    onFastingDelete: (String) -> Unit,
+    onFastingTick: () -> Unit,
 ) {
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
@@ -108,7 +119,19 @@ fun NobelleApp(
                 )
             }
             composable(Destination.COACH.route) { CoachScreen() }
-            composable(Destination.HEALTH.route) { MyHealthScreen() }
+            composable(Destination.HEALTH.route) {
+                MyHealthScreen(
+                    fasting = fasting,
+                    onFastingEnable = onFastingEnable,
+                    onFastingDisable = onFastingDisable,
+                    onFastingStart = onFastingStart,
+                    onFastingEnd = onFastingEnd,
+                    onFastingCancel = onFastingCancel,
+                    onFastingBackdate = onFastingBackdate,
+                    onFastingDelete = onFastingDelete,
+                    onFastingTick = onFastingTick,
+                )
+            }
             composable(Destination.PROGRESS.route) { ProgressScreen() }
             composable(Destination.PROFILE.route) {
                 ProfileScreen(

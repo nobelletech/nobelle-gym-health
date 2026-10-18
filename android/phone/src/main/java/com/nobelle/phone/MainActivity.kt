@@ -13,6 +13,7 @@ import com.nobelle.core.sync.AndroidDriveStore
 import com.nobelle.core.sync.DriveRoundTripDiagnostic
 import com.nobelle.phone.auth.DriveAuthorizationController
 import com.nobelle.phone.auth.DriveAuthViewModel
+import com.nobelle.phone.fasting.FastingViewModel
 import com.nobelle.phone.gym.GymVisitViewModel
 import com.nobelle.phone.ui.NobelleApp
 import com.nobelle.phone.ui.NobelleTheme
@@ -23,6 +24,7 @@ class MainActivity : ComponentActivity() {
     private val driveAuthModel by viewModels<DriveAuthViewModel>()
     private val workoutModel by viewModels<WorkoutViewModel>()
     private val gymVisitModel by viewModels<GymVisitViewModel>()
+    private val fastingModel by viewModels<FastingViewModel>()
     private lateinit var driveAuthorization: DriveAuthorizationController
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,9 +36,11 @@ class MainActivity : ComponentActivity() {
             val ownerId by driveAuthModel.ownerId.collectAsStateWithLifecycle()
             val workoutState by workoutModel.state.collectAsStateWithLifecycle()
             val gymVisitState by gymVisitModel.state.collectAsStateWithLifecycle()
+            val fastingState by fastingModel.state.collectAsStateWithLifecycle()
             LaunchedEffect(ownerId?.uid) {
                 workoutModel.selectOwner(ownerId)
                 gymVisitModel.selectOwner(ownerId)
+                fastingModel.selectOwner(ownerId)
             }
             NobelleTheme {
                 NobelleApp(
@@ -75,6 +79,15 @@ class MainActivity : ComponentActivity() {
                     onEndVisit = gymVisitModel::endVisit,
                     onEditVisit = gymVisitModel::editVisit,
                     onDeleteVisit = gymVisitModel::deleteVisit,
+                    fasting = fastingState,
+                    onFastingEnable = fastingModel::enable,
+                    onFastingDisable = fastingModel::disable,
+                    onFastingStart = fastingModel::startNow,
+                    onFastingEnd = fastingModel::endNow,
+                    onFastingCancel = fastingModel::cancelActive,
+                    onFastingBackdate = fastingModel::addBackdated,
+                    onFastingDelete = fastingModel::deleteSession,
+                    onFastingTick = fastingModel::tick,
                 )
             }
         }

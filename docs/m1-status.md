@@ -25,6 +25,10 @@
 - Gym attendance supports log-now, calendar/clock backdating, selectable or
   manual categories, edit, end and deletion with tombstones. Attendance counts
   distinct visit-start local dates rather than raw visits or linked workouts.
+- The optional fasting tracker requires explicit enablement, persists schedule
+  and actual instants, derives elapsed time without a service, and supports
+  manual start/end/cancel, calendar/clock backdating and deletion. It never
+  starts, ends or extends a fast automatically.
 
 ## Hardware evidence
 
@@ -43,6 +47,15 @@
   date and verified `1 attendance day · 2 visits` before and after restart.
   Deleted the Cardio visit and verified after another restart that it remained
   absent while the first visit remained unchanged.
+- Enabled a 12:12 fasting schedule and verified it survived restart without
+  automatically starting a fast. Started a short test fast, recovered the same
+  active start instant after force-stop, then cancelled it and verified the
+  neutral cancelled history state. Backdated an exact 12-hour completed fast
+  and verified it survived restart.
+- A double-submission produced two identical backdated fasts during testing.
+  The repository now treats an exact completed interval as canonical and the
+  dialog has a synchronous submit guard. One duplicate was explicitly deleted
+  by the owner; exactly one completed 12-hour record remained after restart.
 - Android hardware tests passed: 3 encrypted-key tests and 17 Room migration,
   owner-isolation, transition, outbox and tombstone tests. Fourteen phone JVM
   tests also passed.
@@ -50,5 +63,5 @@
 ## Pending
 
 - Automatic Drive outbox upload, acknowledgements, retry/backoff and restore.
-- Fasting UI, Health Connect import and watch enrollment.
+- Health Connect import and watch enrollment.
 - Independent network-capture inspection.

@@ -31,27 +31,106 @@ class FastingSessionRepository(
     /** Persists the fast as given — actual instants and zones are never recomputed. */
     suspend fun upsert(owner: OwnerId, session: FastingSession): FastingSession = database.withTransaction {
         require(session.ownerUID == owner.uid) { "Fasting session does not belong to the requested owner" }
-        database.fastingSessions().upsert(session.toEntity())
-        val event = SyncEvent(
-            schemaVersion = SYNC_EVENT_SCHEMA_VERSION,
-            accountNamespace = owner.uid,
-            installationId = installationId,
-            entityId = session.id,
-            entityType = ENTITY_TYPE,
-            operationUuid = newId(),
-            revision = session.revision,
-            op = SyncEvent.Op.UPSERT,
-            payloadJson = durableJson.encodeToString(session),
-            utc = now(),
+        persist(owner, session)
+    }
+
+    /** Begins an actual fast now or backdated; at most one ACTIVE per owner. */
+    suspend fun start(
+        owner: OwnerId,
+        start: Instant,
+        startZone: String,
+        targetDurationSec: Long,
+        scheduleId: String?,
+    ): FastingSession = database.withTransaction {
+        require(targetDurationSec > 0) { "Target duration must be positive" }
+        require(database.fastingSessions().active(owner.uid) == null) {
+            "A fast is already active"
+        }
+        persist(
+            owner,
+            FastingSession(
+                id = newId(),
+                ownerUID = owner.uid,
+                actualStartInstant = start,
+                originalStartZone = startZone,
+                targetDurationSec = targetDurationSec,
+                scheduleId = scheduleId,
+                status = FastingSession.Status.ACTIVE,
+                revision = 1,
+            )
         )
-        database.outbox().enqueue(event.toOutboxEntity(now().toEpochMilliseconds()))
-        session
+    }
+
+    suspend fun end(owner: OwnerId, id: String, end: Instant, endZone: String): FastingSession =
+        finish(owner, id, end, endZone, FastingSession.Status.COMPLETED)
+
+    suspend fun cancel(owner: OwnerId, id: String, end: Instant, endZone: String): FastingSession =
+        finish(owner, id, end, endZone, FastingSession.Status.CANCELLED)
+
+    private suspend fun finish(
+        owner: OwnerId,
+        id: String,
+        end: Instant,
+        endZone: String,
+        status: FastingSession.Status,
+    ): FastingSession = database.withTransaction {
+        val session = decodeRequired(owner, id)
+        require(session.deletedUtc == null) { "Fasting session is already deleted" }
+        require(session.status == FastingSession.Status.ACTIVE) { "Only an active fast can end" }
+        require(end >= session.actualStartInstant) { "A fast cannot end before it starts" }
+        persist(
+            owner,
+            session.copy(
+                actualEndInstant = end,
+                originalEndZone = endZone,
+                status = status,
+                endedEarly = (end - session.actualStartInstant).inWholeSeconds <
+                    session.targetDurationSec,
+                revision = session.revision + 1,
+            )
+        )
+    }
+
+    /** Records an already-completed fast (e.g. forgotten manual entry). */
+    suspend fun createCompleted(
+        owner: OwnerId,
+        start: Instant,
+        end: Instant,
+        startZone: String,
+        endZone: String,
+        targetDurationSec: Long,
+        scheduleId: String?,
+        notes: String?,
+    ): FastingSession = database.withTransaction {
+        require(targetDurationSec > 0) { "Target duration must be positive" }
+        require(end >= start) { "A fast cannot end before it starts" }
+        // The exact actual interval is canonical identity for a manually
+        // backdated completed fast: an identical record already stored is
+        // returned as-is — no second row, revision bump, or outbox event.
+        database.fastingSessions().completedByWindow(
+            owner.uid, start.toEpochMilliseconds(), end.toEpochMilliseconds(),
+        )?.let { return@withTransaction decode(it, owner.uid) }
+        persist(
+            owner,
+            FastingSession(
+                id = newId(),
+                ownerUID = owner.uid,
+                actualStartInstant = start,
+                actualEndInstant = end,
+                originalStartZone = startZone,
+                originalEndZone = endZone,
+                targetDurationSec = targetDurationSec,
+                scheduleId = scheduleId,
+                status = FastingSession.Status.COMPLETED,
+                endedEarly = (end - start).inWholeSeconds < targetDurationSec,
+                notes = notes?.trim()?.ifBlank { null },
+                revision = 1,
+            )
+        )
     }
 
     suspend fun delete(owner: OwnerId, id: String): FastingSession = database.withTransaction {
-        val entity = database.fastingSessions().byId(owner.uid, id)
-            ?: throw NoSuchElementException("Fasting session not found for this owner")
-        val session = decode(entity, owner.uid)
+        val session = decodeRequired(owner, id)
         require(session.deletedUtc == null) { "Fasting session is already deleted" }
         val deleted = session.copy(deletedUtc = now(), revision = session.revision + 1)
         database.fastingSessions().upsert(deleted.toEntity())
@@ -79,6 +158,31 @@ class FastingSessionRepository(
         )
         database.outbox().enqueue(event.toOutboxEntity(now().toEpochMilliseconds()))
         deleted
+    }
+
+    /** Row write + immutable UPSERT event; callers wrap this in withTransaction. */
+    private suspend fun persist(owner: OwnerId, session: FastingSession): FastingSession {
+        database.fastingSessions().upsert(session.toEntity())
+        val event = SyncEvent(
+            schemaVersion = SYNC_EVENT_SCHEMA_VERSION,
+            accountNamespace = owner.uid,
+            installationId = installationId,
+            entityId = session.id,
+            entityType = ENTITY_TYPE,
+            operationUuid = newId(),
+            revision = session.revision,
+            op = SyncEvent.Op.UPSERT,
+            payloadJson = durableJson.encodeToString(session),
+            utc = now(),
+        )
+        database.outbox().enqueue(event.toOutboxEntity(now().toEpochMilliseconds()))
+        return session
+    }
+
+    private suspend fun decodeRequired(owner: OwnerId, id: String): FastingSession {
+        val entity = database.fastingSessions().byId(owner.uid, id)
+            ?: throw NoSuchElementException("Fasting session not found for this owner")
+        return decode(entity, owner.uid)
     }
 
     private fun decode(entity: FastingSessionEntity, ownerUID: String): FastingSession {

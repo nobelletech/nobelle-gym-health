@@ -1,16 +1,88 @@
 package com.nobelle.phone.ui.screens
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
+import com.nobelle.core.model.FastingSchedule
+import com.nobelle.core.model.FastingSession
 import com.nobelle.core.model.MarkerGroup
+import com.nobelle.phone.fasting.FastingBackdateInput
+import com.nobelle.phone.fasting.FastingInputParser
+import com.nobelle.phone.fasting.FastingViewModel
+import kotlin.time.Duration
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.datetime.Clock
+import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.minus
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * My Health (§3/§10): overview cards by group; each marker opens a dedicated
  * history screen with units, range, source, last update, gaps and export.
+ * The fasting card is an explicit opt-in tracker — the schedule is planning
+ * context only and never starts, ends, extends or judges a fast.
  */
 @Composable
-fun MyHealthScreen() {
+fun MyHealthScreen(
+    fasting: FastingViewModel.FastingUiState,
+    onFastingEnable: (fastingHours: Int, startLocalTime: String) -> Unit,
+    onFastingDisable: () -> Unit,
+    onFastingStart: () -> Unit,
+    onFastingEnd: () -> Unit,
+    onFastingCancel: () -> Unit,
+    onFastingBackdate: (FastingBackdateInput) -> Unit,
+    onFastingDelete: (String) -> Unit,
+    onFastingTick: () -> Unit,
+) {
+    var showSetup by remember { mutableStateOf(false) }
+    var showBackdate by remember { mutableStateOf(false) }
+    var confirmDisable by remember { mutableStateOf(false) }
+    var confirmCancel by remember { mutableStateOf(false) }
+    var deletingId by remember { mutableStateOf<String?>(null) }
+
+    // Elapsed time re-renders while a fast is active; tick() only updates the
+    // clock in UI state — it never writes or auto-ends anything.
+    if (fasting.active != null) {
+        LaunchedEffect(fasting.active!!.id) {
+            while (isActive) {
+                delay(30_000)
+                onFastingTick()
+            }
+        }
+    }
+
     ScreenColumn {
         ScreenTitle("My Health")
 
@@ -21,10 +93,19 @@ fun MyHealthScreen() {
             )
         }
 
-        InfoCard(
-            title = "Fasting",
-            body = "Optional eating-window tracker. Enable it in settings — no schedule is started for you.",
-            trailing = { OutlinedButton(onClick = {}) { Text("Set up") } },
+        fasting.message?.let { message ->
+            Text(message, color = MaterialTheme.colorScheme.error)
+        }
+
+        FastingCard(
+            fasting = fasting,
+            onSetup = { showSetup = true },
+            onStart = onFastingStart,
+            onBackdate = { showBackdate = true },
+            onEnd = onFastingEnd,
+            onRequestCancel = { confirmCancel = true },
+            onRequestDisable = { confirmDisable = true },
+            onRequestDelete = { deletingId = it },
         )
 
         InfoCard(
@@ -39,6 +120,405 @@ fun MyHealthScreen() {
             trailing = { OutlinedButton(onClick = {}) { Text("About") } },
         )
     }
+
+    if (showSetup) {
+        FastingSetupDialog(
+            enabled = !fasting.loading,
+            onDismiss = { showSetup = false },
+            onEnable = { hours, start ->
+                showSetup = false
+                onFastingEnable(hours, start)
+            },
+        )
+    }
+
+    if (showBackdate) {
+        FastingBackdateDialog(
+            schedule = fasting.schedule,
+            enabled = !fasting.loading,
+            onDismiss = { showBackdate = false },
+            onSubmit = { input ->
+                showBackdate = false
+                onFastingBackdate(input)
+            },
+        )
+    }
+
+    if (confirmCancel) {
+        AlertDialog(
+            onDismissRequest = { confirmCancel = false },
+            title = { Text("Cancel this fast?") },
+            text = { Text("The fast is marked cancelled in your history — nothing is erased.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmCancel = false
+                        onFastingCancel()
+                    }
+                ) { Text("Cancel fast") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmCancel = false }) { Text("Keep") }
+            },
+        )
+    }
+
+    if (confirmDisable) {
+        AlertDialog(
+            onDismissRequest = { confirmDisable = false },
+            title = { Text("Disable the fasting tracker?") },
+            text = { Text("The schedule is turned off and any active fast stays active. Your fasting history remains on this device.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmDisable = false
+                        onFastingDisable()
+                    }
+                ) { Text("Disable") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDisable = false }) { Text("Keep") }
+            },
+        )
+    }
+
+    deletingId?.let { id ->
+        AlertDialog(
+            onDismissRequest = { deletingId = null },
+            title = { Text("Delete this fast?") },
+            text = { Text("This marks the record as deleted on this device; a deletion is queued for Drive sync once upload exists.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        deletingId = null
+                        onFastingDelete(id)
+                    }
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { deletingId = null }) { Text("Keep") }
+            },
+        )
+    }
+}
+
+@Composable
+private fun FastingCard(
+    fasting: FastingViewModel.FastingUiState,
+    onSetup: () -> Unit,
+    onStart: () -> Unit,
+    onBackdate: () -> Unit,
+    onEnd: () -> Unit,
+    onRequestCancel: () -> Unit,
+    onRequestDisable: () -> Unit,
+    onRequestDelete: (String) -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Fasting", style = MaterialTheme.typography.titleMedium)
+            when {
+                !fasting.ownerAvailable -> {
+                    Text(
+                        "Connect your Google identity in Profile once; the optional fasting tracker then stays available offline.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedButton(onClick = onSetup, enabled = false) { Text("Set up") }
+                }
+                fasting.schedule == null -> {
+                    Text(
+                        "Optional eating-window tracker. You pick a schedule — Nobelle never starts, ends or extends a fast for you.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedButton(onClick = onSetup, enabled = !fasting.loading) { Text("Set up") }
+                }
+                fasting.active != null -> {
+                    val session = fasting.active!!
+                    Text(
+                        "Elapsed ${session.elapsedAt(fasting.now).formatHm()} · " +
+                            "Target ${session.targetDurationSec / 3600}h · " +
+                            "Started ${session.actualStartInstant.localHm(session.originalStartZone)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    if (session.targetReached(fasting.now)) {
+                        Text(
+                            "Target reached — end when you choose.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = onEnd, enabled = !fasting.loading) { Text("End fast") }
+                        OutlinedButton(onClick = onRequestCancel, enabled = !fasting.loading) {
+                            Text("Cancel")
+                        }
+                    }
+                }
+                else -> {
+                    val schedule = fasting.schedule!!
+                    Text(
+                        "${schedule.fastingHours}:${schedule.eatingHours} · starts ${schedule.startLocalTime} daily",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        "Planning context only — nothing starts automatically.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = onStart, enabled = !fasting.loading) { Text("Start fast") }
+                        OutlinedButton(onClick = onBackdate, enabled = !fasting.loading) {
+                            Text("Backdate")
+                        }
+                        TextButton(onClick = onRequestDisable, enabled = !fasting.loading) {
+                            Text("Disable")
+                        }
+                    }
+                }
+            }
+            if (fasting.ownerAvailable && fasting.history.isNotEmpty()) {
+                fasting.history.take(5).forEach { session ->
+                    FastingHistoryRow(
+                        session = session,
+                        enabled = !fasting.loading,
+                        onDelete = { onRequestDelete(session.id) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FastingHistoryRow(
+    session: FastingSession,
+    enabled: Boolean,
+    onDelete: () -> Unit,
+) {
+    Column(
+        Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        val startLocal = session.actualStartInstant.localHm(session.originalStartZone)
+        val endLocal = session.actualEndInstant?.let {
+            it.localHm(session.originalEndZone ?: session.originalStartZone)
+        }
+        val startDate = session.actualStartInstant.localDate(session.originalStartZone)
+        Text(
+            "$startDate · $startLocal${endLocal?.let { "–$it" } ?: "–ongoing"}",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Text(
+            buildString {
+                append(session.elapsedAt(Clock.System.now()).formatHm())
+                append(" · ")
+                append(
+                    when (session.status) {
+                        FastingSession.Status.ACTIVE -> "Active"
+                        FastingSession.Status.COMPLETED -> "Completed"
+                        FastingSession.Status.CANCELLED -> "Cancelled"
+                    }
+                )
+                if (session.endedEarly) append(" · Ended before target")
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TextButton(onClick = onDelete, enabled = enabled) { Text("Delete") }
+    }
+}
+
+@Composable
+private fun FastingSetupDialog(
+    enabled: Boolean,
+    onDismiss: () -> Unit,
+    onEnable: (fastingHours: Int, startLocalTime: String) -> Unit,
+) {
+    var selectedHours by remember { mutableStateOf<Int?>(null) }
+    var startTime by remember { mutableStateOf("20:00") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Set up fasting") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "Choose a daily template and when your fast usually starts. " +
+                        "This is only a planning guide — Nobelle never starts or ends a fast for you.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FastingSchedule.TEMPLATES.forEach { (fasting, eating) ->
+                        FilterChip(
+                            selected = selectedHours == fasting,
+                            onClick = { selectedHours = fasting },
+                            label = { Text("$fasting:$eating") },
+                        )
+                    }
+                }
+                NativeTimeField(
+                    label = "Usual start time",
+                    value = startTime,
+                    enabled = enabled,
+                    onChange = { startTime = it },
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = enabled && selectedHours != null,
+                onClick = { selectedHours?.let { onEnable(it, startTime) } },
+            ) { Text("Enable") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+}
+
+@Composable
+private fun FastingBackdateDialog(
+    schedule: FastingSchedule?,
+    enabled: Boolean,
+    onDismiss: () -> Unit,
+    onSubmit: (FastingBackdateInput) -> Unit,
+) {
+    val zone = TimeZone.currentSystemDefault()
+    val localNow = Clock.System.now().toLocalDateTime(zone)
+    var startDate by remember {
+        mutableStateOf(localNow.date.minus(DatePeriod(days = 1)).toString())
+    }
+    var startTime by remember { mutableStateOf(schedule?.startLocalTime ?: "20:00") }
+    var endDate by remember { mutableStateOf(localNow.date.toString()) }
+    var endTime by remember { mutableStateOf("%02d:%02d".format(localNow.hour, localNow.minute)) }
+    var notes by remember { mutableStateOf("") }
+    var formError by remember { mutableStateOf<String?>(null) }
+    // Synchronous submit guard: the repository is the authoritative
+    // idempotency boundary, but a double-tap shouldn't fire twice.
+    var submitted by remember { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add a past fast") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Start", style = MaterialTheme.typography.labelLarge)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    NativeDateField("Start date", startDate, enabled, { startDate = it }, Modifier.weight(1f))
+                    NativeTimeField("Start time", startTime, enabled, { startTime = it }, Modifier.weight(1f))
+                }
+                Text("End", style = MaterialTheme.typography.labelLarge)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    NativeDateField("End date", endDate, enabled, { endDate = it }, Modifier.weight(1f))
+                    NativeTimeField("End time", endTime, enabled, { endTime = it }, Modifier.weight(1f))
+                }
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text("Notes (optional)") },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                formError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = enabled && !submitted,
+                onClick = {
+                    when (val parsed = FastingInputParser.parse(
+                        startDate = startDate, startTime = startTime,
+                        endDate = endDate, endTime = endTime,
+                        zoneId = zone.id, notes = notes,
+                    )) {
+                        is FastingInputParser.Result.Ok -> {
+                            submitted = true
+                            onSubmit(parsed.input)
+                        }
+                        is FastingInputParser.Result.Invalid -> formError = parsed.message
+                    }
+                },
+            ) { Text("Save") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+}
+
+@Composable
+private fun NativeDateField(
+    label: String,
+    value: String,
+    enabled: Boolean,
+    onChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val date = runCatching { LocalDate.parse(value) }
+        .getOrElse { Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date }
+    OutlinedButton(
+        onClick = {
+            DatePickerDialog(
+                context,
+                { _, year, month, dayOfMonth ->
+                    onChange("%04d-%02d-%02d".format(year, month + 1, dayOfMonth))
+                },
+                date.year,
+                date.monthNumber - 1,
+                date.dayOfMonth,
+            ).show()
+        },
+        enabled = enabled,
+        modifier = modifier.semantics { contentDescription = "$label, $value" },
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(label)
+            Text(value, style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+@Composable
+private fun NativeTimeField(
+    label: String,
+    value: String,
+    enabled: Boolean,
+    onChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val time = runCatching { LocalTime.parse(value) }
+        .getOrElse { Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time }
+    OutlinedButton(
+        onClick = {
+            TimePickerDialog(
+                context,
+                { _, hourOfDay, minute -> onChange("%02d:%02d".format(hourOfDay, minute)) },
+                time.hour,
+                time.minute,
+                android.text.format.DateFormat.is24HourFormat(context),
+            ).show()
+        },
+        enabled = enabled,
+        modifier = modifier.semantics { contentDescription = "$label, $value" },
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(label)
+            Text(value, style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+private fun Duration.formatHm(): String = "${inWholeHours}h %02dm".format(inWholeMinutes % 60)
+
+private fun Instant.localHm(zoneId: String): String {
+    val zone = runCatching { TimeZone.of(zoneId) }.getOrElse { TimeZone.currentSystemDefault() }
+    val local = toLocalDateTime(zone)
+    return "%02d:%02d".format(local.hour, local.minute)
+}
+
+private fun Instant.localDate(zoneId: String): String {
+    val zone = runCatching { TimeZone.of(zoneId) }.getOrElse { TimeZone.currentSystemDefault() }
+    return toLocalDateTime(zone).date.toString()
 }
 
 private val MarkerGroup.displayName: String

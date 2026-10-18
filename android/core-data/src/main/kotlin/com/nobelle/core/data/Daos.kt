@@ -70,8 +70,29 @@ interface FastingSessionDao {
     @Query("SELECT * FROM fasting_sessions WHERE ownerUID = :ownerUID AND status = 'ACTIVE' AND deletedUtc IS NULL")
     suspend fun active(ownerUID: String): FastingSessionEntity?
 
+    @Query("""SELECT * FROM fasting_sessions
+        WHERE ownerUID=:ownerUID AND actualStartInstant=:startMs AND actualEndInstant=:endMs
+        AND status='COMPLETED' AND deletedUtc IS NULL
+        ORDER BY revision DESC LIMIT 1""")
+    suspend fun completedByWindow(ownerUID: String, startMs: Long, endMs: Long): FastingSessionEntity?
+
     @Query("SELECT * FROM fasting_sessions WHERE ownerUID = :ownerUID AND deletedUtc IS NULL ORDER BY actualStartInstant DESC")
     suspend fun list(ownerUID: String): List<FastingSessionEntity>
+}
+
+@Dao
+interface FastingScheduleDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(s: FastingScheduleEntity)
+
+    @Query("SELECT * FROM fasting_schedules WHERE ownerUID = :ownerUID AND enabled = 1 LIMIT 1")
+    suspend fun enabled(ownerUID: String): FastingScheduleEntity?
+
+    @Query("SELECT * FROM fasting_schedules WHERE ownerUID = :ownerUID AND id = :id")
+    suspend fun byId(ownerUID: String, id: String): FastingScheduleEntity?
+
+    @Query("SELECT * FROM fasting_schedules WHERE ownerUID = :ownerUID")
+    suspend fun list(ownerUID: String): List<FastingScheduleEntity>
 }
 
 @Dao
