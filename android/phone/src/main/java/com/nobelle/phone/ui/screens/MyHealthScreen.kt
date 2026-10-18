@@ -610,20 +610,22 @@ private fun HealthConnectCard(
                             },
                         )
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(
-                            onClick = onRequest,
-                            enabled = !health.loading && health.selected.isNotEmpty(),
-                        ) { Text("Request selected access") }
-                        OutlinedButton(
-                            onClick = onImport,
-                            enabled = !health.loading &&
-                                (health.selected intersect health.granted).isNotEmpty(),
-                        ) { Text("Import selected") }
-                    }
-                    OutlinedButton(onClick = onRefresh, enabled = !health.loading) {
-                        Text("Refresh access")
-                    }
+                    Button(
+                        onClick = onRequest,
+                        enabled = !health.loading && health.selected.isNotEmpty(),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text("Request selected access") }
+                    OutlinedButton(
+                        onClick = onImport,
+                        enabled = !health.loading &&
+                            (health.selected intersect health.granted).isNotEmpty(),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text("Import selected") }
+                    OutlinedButton(
+                        onClick = onRefresh,
+                        enabled = !health.loading,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text("Refresh access") }
                     health.lastImportCounts?.let { counts ->
                         Text("Last import", style = MaterialTheme.typography.labelLarge)
                         HealthConnectCategory.entries.forEach { category ->
