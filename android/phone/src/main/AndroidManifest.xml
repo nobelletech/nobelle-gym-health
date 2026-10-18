@@ -15,6 +15,10 @@
         android:theme="@style/Theme.Nobelle">
 
         <activity
+            android:name="net.openid.appauth.RedirectUriReceiverActivity"
+            android:theme="@style/Theme.Nobelle.AppAuth" />
+
+        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>

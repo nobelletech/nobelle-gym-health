@@ -15,6 +15,10 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        val androidClientId = providers.gradleProperty("googleAndroidClientId").get()
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${providers.gradleProperty("googleWebClientId").get()}\"")
+        buildConfigField("String", "GOOGLE_ANDROID_CLIENT_ID", "\"$androidClientId\"")
+        manifestPlaceholders["appAuthRedirectScheme"] = "com.googleusercontent.apps.${androidClientId.removeSuffix(".apps.googleusercontent.com")}"
     }
 
     buildTypes {
@@ -28,7 +32,10 @@ android {
         }
     }
 
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -52,7 +59,7 @@ dependencies {
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.navigation.compose)
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.play.services.auth)
+    implementation(libs.app.auth)
 
     debugImplementation(libs.compose.ui.tooling)
     testImplementation(libs.junit)
