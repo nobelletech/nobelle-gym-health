@@ -21,6 +21,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.nobelle.phone.gym.GymVisitInput
+import com.nobelle.phone.gym.GymVisitViewModel
 import com.nobelle.phone.ui.screens.CoachScreen
 import com.nobelle.phone.ui.screens.MyHealthScreen
 import com.nobelle.phone.ui.screens.ProfileScreen
@@ -53,6 +55,12 @@ fun NobelleApp(
     onFinishWorkout: () -> Unit,
     onDiscardWorkout: () -> Unit,
     onAddSet: (SetEntryInput) -> Unit,
+    gymVisits: GymVisitViewModel.GymVisitUiState,
+    onLogVisitNow: (gymLabel: String?, category: String?, notes: String?) -> Unit,
+    onBackdateVisit: (GymVisitInput) -> Unit,
+    onEndVisit: (String) -> Unit,
+    onEditVisit: (String, GymVisitInput) -> Unit,
+    onDeleteVisit: (String) -> Unit,
 ) {
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
@@ -86,11 +94,17 @@ fun NobelleApp(
             composable(Destination.TODAY.route) {
                 TodayScreen(
                     workout = workout,
+                    gymVisits = gymVisits,
                     onStart = onStartWorkout,
                     onPauseOrResume = onPauseOrResumeWorkout,
                     onFinish = onFinishWorkout,
                     onDiscard = onDiscardWorkout,
                     onAddSet = onAddSet,
+                    onLogVisitNow = onLogVisitNow,
+                    onBackdateVisit = onBackdateVisit,
+                    onEndVisit = onEndVisit,
+                    onEditVisit = onEditVisit,
+                    onDeleteVisit = onDeleteVisit,
                 )
             }
             composable(Destination.COACH.route) { CoachScreen() }

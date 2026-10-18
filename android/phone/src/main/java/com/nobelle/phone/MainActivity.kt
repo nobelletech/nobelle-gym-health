@@ -13,6 +13,7 @@ import com.nobelle.core.sync.AndroidDriveStore
 import com.nobelle.core.sync.DriveRoundTripDiagnostic
 import com.nobelle.phone.auth.DriveAuthorizationController
 import com.nobelle.phone.auth.DriveAuthViewModel
+import com.nobelle.phone.gym.GymVisitViewModel
 import com.nobelle.phone.ui.NobelleApp
 import com.nobelle.phone.ui.NobelleTheme
 import com.nobelle.phone.workout.WorkoutViewModel
@@ -21,6 +22,7 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     private val driveAuthModel by viewModels<DriveAuthViewModel>()
     private val workoutModel by viewModels<WorkoutViewModel>()
+    private val gymVisitModel by viewModels<GymVisitViewModel>()
     private lateinit var driveAuthorization: DriveAuthorizationController
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,7 +33,11 @@ class MainActivity : ComponentActivity() {
             val driveState by driveAuthModel.state.collectAsStateWithLifecycle()
             val ownerId by driveAuthModel.ownerId.collectAsStateWithLifecycle()
             val workoutState by workoutModel.state.collectAsStateWithLifecycle()
-            LaunchedEffect(ownerId?.uid) { workoutModel.selectOwner(ownerId) }
+            val gymVisitState by gymVisitModel.state.collectAsStateWithLifecycle()
+            LaunchedEffect(ownerId?.uid) {
+                workoutModel.selectOwner(ownerId)
+                gymVisitModel.selectOwner(ownerId)
+            }
             NobelleTheme {
                 NobelleApp(
                     driveStatus = driveState.label,
@@ -63,6 +69,12 @@ class MainActivity : ComponentActivity() {
                             substitutedForExerciseId = entry.substitutedForExerciseId,
                         )
                     },
+                    gymVisits = gymVisitState,
+                    onLogVisitNow = gymVisitModel::logNow,
+                    onBackdateVisit = gymVisitModel::addBackdated,
+                    onEndVisit = gymVisitModel::endVisit,
+                    onEditVisit = gymVisitModel::editVisit,
+                    onDeleteVisit = gymVisitModel::deleteVisit,
                 )
             }
         }

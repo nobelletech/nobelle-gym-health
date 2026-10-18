@@ -10,12 +10,16 @@ import com.nobelle.core.model.OwnerId
 import com.nobelle.core.model.SyncEvent
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
 import kotlinx.serialization.json.Json
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -119,5 +123,111 @@ class GymVisitRepositoryTest {
         val stored = json.decodeFromString(GymVisit.serializer(), event.payloadJson)
         assertEquals("2023-11-14", stored.localAttendanceDate) // attendance date preserved verbatim
         assertEquals(visit.startInstant, stored.startInstant)
+    }
+
+    @Test
+    fun createDerivesAttendanceDateFromStartLocalDateEvenOvernight() = runBlocking {
+        // 23:30 in Toronto on Jan 5 is Jan 6 in UTC — the attendance day is
+        // still Jan 5 because the start's local date governs.
+        val start = LocalDateTime(2024, 1, 5, 23, 30)
+            .toInstant(TimeZone.of("America/Toronto"))
+
+        val visit = repo.create(ownerA, start, "America/Toronto", gymLabel = "Downtown")
+
+        assertEquals("2024-01-05", visit.localAttendanceDate)
+        assertEquals(start, visit.startInstant)
+        assertEquals("America/Toronto", visit.originalTimeZone)
+        assertEquals("Downtown", visit.gymLabel)
+        assertNull(visit.endInstant)
+        assertTrue(visit.confirmed)
+        assertEquals(1L, visit.revision)
+        assertEquals(1, db.outbox().pending(ownerA.uid).size)
+        assertTrue(repo.list(ownerA).single().id == visit.id)
+    }
+
+    @Test
+    fun twoVisitsOnOneLocalDayAreTwoRecordsButOneAttendanceDay() = runBlocking {
+        val tz = TimeZone.of("America/Toronto")
+        repo.create(ownerA, LocalDateTime(2024, 2, 10, 7, 0).toInstant(tz), tz.id)
+        repo.create(ownerA, LocalDateTime(2024, 2, 10, 18, 30).toInstant(tz), tz.id)
+
+        val visits = repo.list(ownerA)
+        assertEquals(2, visits.size)
+        assertEquals(1, visits.map { it.localAttendanceDate }.distinct().size)
+        assertEquals("2024-02-10", visits.first().localAttendanceDate)
+    }
+
+    @Test
+    fun endRejectsEndBeforeStartAndThenSetsEnd() = runBlocking {
+        val tz = TimeZone.of("America/Toronto")
+        val start = LocalDateTime(2024, 3, 1, 9, 0).toInstant(tz)
+        val visit = repo.create(ownerA, start, tz.id)
+
+        try {
+            repo.end(ownerA, visit.id, Instant.fromEpochMilliseconds(start.toEpochMilliseconds() - 300_000))
+            fail("end before start must be rejected")
+        } catch (expected: IllegalArgumentException) {
+            // rejected before any write
+        }
+
+        val end = LocalDateTime(2024, 3, 1, 10, 15).toInstant(tz)
+        val ended = repo.end(ownerA, visit.id, end)
+        assertEquals(end, ended.endInstant)
+        assertEquals(start, ended.startInstant)
+        assertEquals("2024-03-01", ended.localAttendanceDate)
+        assertEquals(2L, ended.revision)
+    }
+
+    @Test
+    fun editRecomputesAttendanceDateAndKeepsOnlyValidEnd() = runBlocking {
+        val tz = TimeZone.of("America/Toronto")
+        val start = LocalDateTime(2024, 4, 2, 20, 0).toInstant(tz)
+        val visit = repo.create(ownerA, start, tz.id)
+        val end = LocalDateTime(2024, 4, 2, 21, 0).toInstant(tz)
+        repo.end(ownerA, visit.id, end)
+
+        // Editing the start past its end clears the now-invalid end.
+        val laterStart = LocalDateTime(2024, 4, 3, 22, 0).toInstant(tz)
+        val edited = repo.edit(ownerA, visit.id, laterStart, tz.id, "Uptown", "Sauna", "note")
+        assertEquals("2024-04-03", edited.localAttendanceDate)
+        assertEquals(laterStart, edited.startInstant)
+        assertNull(edited.endInstant)
+        assertEquals("Uptown", edited.gymLabel)
+        assertEquals("Sauna", edited.category)
+        assertEquals("note", edited.notes)
+        assertEquals(3L, edited.revision)
+
+        // Editing within the same day keeps an end that is still after start.
+        val earlierStart = LocalDateTime(2024, 4, 3, 20, 0).toInstant(tz)
+        val reEdited = repo.edit(ownerA, visit.id, earlierStart, tz.id, null, null, null)
+        assertEquals("2024-04-03", reEdited.localAttendanceDate)
+        assertNull(reEdited.endInstant) // end stayed cleared from previous edit
+        assertEquals(4L, reEdited.revision)
+    }
+
+    @Test
+    fun linkingWorkoutsIsIdempotentAndQueuesOnlyRealMutations() = runBlocking {
+        val tz = TimeZone.of("America/Toronto")
+        val visit = repo.create(ownerA, LocalDateTime(2024, 5, 5, 12, 0).toInstant(tz), tz.id)
+
+        val once = repo.linkWorkout(ownerA, visit.id, "workout-1")
+        val twice = repo.linkWorkout(ownerA, visit.id, "workout-2")
+        val duplicate = repo.linkWorkout(ownerA, visit.id, " workout-1 ")
+        val blank = try {
+            repo.linkWorkout(ownerA, visit.id, "   ")
+            fail("blank workout id must be rejected")
+        } catch (expected: IllegalArgumentException) {
+            null
+        }
+        assertNull(blank)
+
+        assertEquals(listOf("workout-1", "workout-2"), twice.workoutIds)
+        assertEquals(listOf("workout-1", "workout-2"), duplicate.workoutIds)
+        assertEquals(3L, twice.revision)
+        assertEquals(3L, duplicate.revision) // duplicate link bumps nothing
+
+        // create + two link mutations = three queued UPSERT events.
+        val ops = db.outbox().pending(ownerA.uid)
+        assertEquals(3, ops.size)
     }
 }

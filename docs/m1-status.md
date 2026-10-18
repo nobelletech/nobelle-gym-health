@@ -19,6 +19,12 @@
 - Manual workouts support start, pause, resume, finish, discard and set logging
   for reps, load, duration, rest, RPE, RIR, tempo, notes, pain, set type,
   grouping and substitutions.
+- The set logger includes 105 searchable, alphabetically sorted exercise
+  presets with editable convenience defaults and manual entry. Presets never
+  guess the user's load.
+- Gym attendance supports log-now, calendar/clock backdating, selectable or
+  manual categories, edit, end and deletion with tombstones. Attendance counts
+  distinct visit-start local dates rather than raw visits or linked workouts.
 
 ## Hardware evidence
 
@@ -32,6 +38,11 @@
 - Scanned the encrypted database and WAL bytes for the test exercise text,
   account email and completion text; none appeared in plaintext. This is a
   local-at-rest check, not an independent network-capture inspection.
+- Logged and ended a `Test Gym` Strength visit, force-stopped the app and
+  recovered the same end time. Added a second Cardio visit on the same local
+  date and verified `1 attendance day · 2 visits` before and after restart.
+  Deleted the Cardio visit and verified after another restart that it remained
+  absent while the first visit remained unchanged.
 - Android hardware tests passed: 3 encrypted-key tests and 17 Room migration,
   owner-isolation, transition, outbox and tombstone tests. Fourteen phone JVM
   tests also passed.
@@ -39,5 +50,5 @@
 ## Pending
 
 - Automatic Drive outbox upload, acknowledgements, retry/backoff and restore.
-- Gym attendance UI, fasting UI, Health Connect import and watch enrollment.
+- Fasting UI, Health Connect import and watch enrollment.
 - Independent network-capture inspection.

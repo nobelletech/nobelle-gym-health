@@ -22,6 +22,8 @@ on every probe.
 | Stable account identity | Google OIDC issuer + subject | Implemented | Samsung SM-S928N, Android 16, 2026-10-18 | Separate identity and Drive authorization requests; encrypted owner identity; email is not used as owner UID |
 | Encrypted local workout store | SQLCipher Room + Android Keystore | Implemented and hardware-tested | Samsung SM-S928N, Android 16, 2026-10-18 | Keystore-wrapped random database passphrase; no destructive fallback |
 | Offline manual workout | Owner-scoped Room repositories | Implemented and hardware-tested | Samsung SM-S928N, Android 16, 2026-10-18 | Start, set logging, pause, force-stop recovery, resume and finish verified; automatic Drive outbox upload remains pending |
+| Exercise selection and set defaults | Local reviewed preset catalogue | Implemented and hardware-tested | Samsung SM-S928N, Android 16, 2026-10-18 | 105 searchable A-Z presets; editable convenience defaults; load is never guessed; manual entry remains available |
+| Gym attendance | Owner-scoped encrypted Room repository | Implemented and hardware-tested | Samsung SM-S928N, Android 16, 2026-10-18 | Log now, end, backdate, same-day deduplication and deletion persistence verified; category/date/time pickers and manual category supported |
 | On-device AI insights | Google AI Edge / MediaPipe LLM | Designed | — pending supported phone | Deterministic template fallback required |
 | ECG / BP (Health Monitor) | — | Not assumed | — | Proprietary; no API assumed |
 | Camera pose cues | On-device pose (ML Kit/LiteRT) | Experimental | — | Separate consent + indicator (§8D) |
