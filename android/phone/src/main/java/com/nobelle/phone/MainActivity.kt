@@ -7,10 +7,14 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import com.nobelle.core.sync.AndroidDriveStore
+import com.nobelle.core.sync.DriveRoundTripDiagnostic
 import com.nobelle.phone.auth.DriveAuthorizationController
 import com.nobelle.phone.auth.DriveAuthViewModel
 import com.nobelle.phone.ui.NobelleApp
 import com.nobelle.phone.ui.NobelleTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val driveAuthModel by viewModels<DriveAuthViewModel>()
@@ -27,9 +31,28 @@ class MainActivity : ComponentActivity() {
                     driveStatus = driveState.label,
                     onConnectDrive = driveAuthorization::authorize,
                     onDisconnectDrive = driveAuthorization::disconnect,
+                    onTestDrive = ::testDriveRoundTrip,
                     driveConnected = driveState is DriveAuthViewModel.State.Connected,
+                    driveDiagnosticStatus = (driveState as? DriveAuthViewModel.State.Connected)?.diagnosticStatus,
+                    driveDiagnosticRunning = (driveState as? DriveAuthViewModel.State.Connected)?.diagnosticRunning == true,
                 )
             }
+        }
+    }
+
+    private fun testDriveRoundTrip() {
+        driveAuthModel.diagnosticRunning()
+        lifecycleScope.launch {
+            val result = runCatching {
+                val drive = AndroidDriveStore(accessToken = { driveAuthorization.accessToken() })
+                DriveRoundTripDiagnostic(drive).run()
+            }
+            driveAuthModel.diagnosticResult(
+                result.fold(
+                    onSuccess = { "Passed: uploaded a non-personal event, read it back exactly, and deleted the temporary Drive file." },
+                    onFailure = { "Failed: ${it.message ?: "Drive diagnostic error"}" },
+                )
+            )
         }
     }
 }

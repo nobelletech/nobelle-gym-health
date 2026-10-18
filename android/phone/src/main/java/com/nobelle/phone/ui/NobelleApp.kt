@@ -40,8 +40,11 @@ enum class Destination(val route: String, val label: String, val icon: ImageVect
 fun NobelleApp(
     driveStatus: String,
     driveConnected: Boolean,
+    driveDiagnosticStatus: String?,
+    driveDiagnosticRunning: Boolean,
     onConnectDrive: () -> Unit,
     onDisconnectDrive: () -> Unit,
+    onTestDrive: () -> Unit,
 ) {
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
@@ -80,8 +83,11 @@ fun NobelleApp(
                 ProfileScreen(
                     driveStatus = driveStatus,
                     driveConnected = driveConnected,
+                    driveDiagnosticStatus = driveDiagnosticStatus,
+                    driveDiagnosticRunning = driveDiagnosticRunning,
                     onConnectDrive = onConnectDrive,
                     onDisconnectDrive = onDisconnectDrive,
+                    onTestDrive = onTestDrive,
                 )
             }
         }

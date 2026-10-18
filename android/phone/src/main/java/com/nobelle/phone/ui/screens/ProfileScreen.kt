@@ -12,8 +12,11 @@ import androidx.compose.runtime.Composable
 fun ProfileScreen(
     driveStatus: String,
     driveConnected: Boolean,
+    driveDiagnosticStatus: String?,
+    driveDiagnosticRunning: Boolean,
     onConnectDrive: () -> Unit,
     onDisconnectDrive: () -> Unit,
+    onTestDrive: () -> Unit,
 ) {
     ScreenColumn {
         ScreenTitle("Profile")
@@ -27,6 +30,17 @@ fun ProfileScreen(
                 }
             },
         )
+        if (driveConnected) {
+            InfoCard(
+                title = "Drive diagnostic",
+                body = driveDiagnosticStatus ?: "Upload, verify and immediately delete one non-personal test event.",
+                trailing = {
+                    OutlinedButton(onClick = onTestDrive, enabled = !driveDiagnosticRunning) {
+                        Text(if (driveDiagnosticRunning) "Testing…" else "Run test")
+                    }
+                },
+            )
+        }
         InfoCard("Goals & schedule", "General fitness, strength, endurance, mobility and more.")
         InfoCard("Units", "kg/lb, km/mi, mmol/L or mg/dL — conversions are explicit and tested.")
         InfoCard("Accessibility", "Large fonts, screen reader labels, reduced motion and colour-independent status.")

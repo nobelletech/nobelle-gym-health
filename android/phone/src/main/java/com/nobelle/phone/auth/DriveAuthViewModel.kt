@@ -8,7 +8,11 @@ class DriveAuthViewModel : ViewModel() {
     sealed interface State {
         data object Disconnected : State
         data object Authorizing : State
-        data class Connected(val grantedScopes: Set<String>) : State
+        data class Connected(
+            val grantedScopes: Set<String>,
+            val diagnosticStatus: String? = null,
+            val diagnosticRunning: Boolean = false,
+        ) : State
         data class Error(val message: String) : State
     }
 
@@ -29,6 +33,16 @@ class DriveAuthViewModel : ViewModel() {
     fun error(message: String) {
         token = null
         mutableState.value = State.Error(message)
+    }
+
+    fun diagnosticRunning() {
+        val connected = mutableState.value as? State.Connected ?: return
+        mutableState.value = connected.copy(diagnosticStatus = "Testing upload, read-back and deletion…", diagnosticRunning = true)
+    }
+
+    fun diagnosticResult(message: String) {
+        val connected = mutableState.value as? State.Connected ?: return
+        mutableState.value = connected.copy(diagnosticStatus = message, diagnosticRunning = false)
     }
 
     fun disconnect() {

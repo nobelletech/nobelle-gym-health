@@ -27,8 +27,9 @@
   `appDataFolder`, uploaded a 148-byte non-personal diagnostic payload, read it
   back, matched its SHA-256 checksum and deleted the temporary file.
 - Verified 2026-10-17 on Galaxy S25 Ultra SM-S938W: Android browser-PKCE OAuth
-  authorized only `drive.appdata` and returned to Nobelle as connected. Android
-  Drive upload/read/delete and external network-capture inspection remain pending.
+  authorized only `drive.appdata`; Nobelle uploaded a non-personal `SyncEvent`,
+  read it back exactly and deleted the temporary file. External network-capture
+  inspection remains pending and is not implied by this functional test.
 
 ## Pending / blocked on owner (§18)
 
