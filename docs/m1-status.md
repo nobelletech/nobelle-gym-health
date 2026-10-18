@@ -71,6 +71,16 @@
 - Repeating the same import reported 0 new or updated records from the same
   2,540 source records, verifying deterministic IDs and idempotent local/outbox
   writes.
+- Installed the Wear debug APK on Galaxy Watch8 `SM-L330`, Wear OS 6 / API 36,
+  firmware `L330XXS2AZF4`. Health Services reported measure and exercise heart
+  rate, running exercise and running location support; the device reported GPS
+  hardware and haptics.
+- After explicit granular heart-rate consent, a live Health Services test
+  returned 86 bpm. The user physically confirmed the explicit haptic pulse.
+  The live BPM was displayed only and not stored or transmitted.
+- The Wear diagnostic ran with 0 reachable phone nodes, which verifies only
+  that the shell can run disconnected. Phone enrollment, recording and durable
+  watch persistence remain unimplemented.
 - Android hardware tests passed: 3 encrypted-key tests and 17 Room migration,
   owner-isolation, transition, outbox and tombstone tests. Fourteen phone JVM
   tests also passed.
@@ -78,5 +88,6 @@
 ## Pending
 
 - Automatic Drive outbox upload, acknowledgements, retry/backoff and restore.
-- Watch installation, capability probing and enrollment.
+- Live watch GPS-fix verification, phone enrollment and durable watch
+  recording/sync.
 - Independent network-capture inspection.

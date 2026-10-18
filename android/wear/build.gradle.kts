@@ -17,6 +17,12 @@ android {
     }
 
     buildTypes {
+        // Debug package mirrors the phone's .debug suffix so a future Data
+        // Layer client pairing targets com.nobelle.gymhealth.debug on both.
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
@@ -39,8 +45,11 @@ dependencies {
     implementation(libs.wear.compose.foundation)
     implementation(libs.wear.compose.navigation)
     implementation(libs.wear.health.services)
+    implementation(libs.guava)
     implementation(libs.play.services.wearable)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.activity.compose)
+    implementation(libs.lifecycle.viewmodel.compose)
 
     testImplementation(libs.junit)
 }

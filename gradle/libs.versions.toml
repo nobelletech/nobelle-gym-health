@@ -57,6 +57,10 @@ wear-compose-material3 = { group = "androidx.wear.compose", name = "compose-mate
 wear-compose-foundation = { group = "androidx.wear.compose", name = "compose-foundation", version.ref = "wearCompose" }
 wear-compose-navigation = { group = "androidx.wear.compose", name = "compose-navigation", version.ref = "wearCompose" }
 wear-health-services = { group = "androidx.health", name = "health-services-client", version.ref = "healthServices" }
+# Compile-visible ListenableFuture for health-services' *Async APIs
+# (upstream runtime-scopes it; listenablefuture:1.0 resolves to the empty
+# conflict-avoidance stub, so the real guava jar is required).
+guava = { group = "com.google.guava", name = "guava", version = "32.0.1-android" }
 play-services-wearable = { group = "com.google.android.gms", name = "play-services-wearable", version.ref = "playServicesWearable" }
 play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
 credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }

@@ -9,8 +9,10 @@ on every probe.
 | Health Connect availability | `HealthConnectClient.getSdkStatus` | Implemented and hardware-tested | Samsung SM-S928N and Galaxy S25 Ultra SM-S938W, Android 16, 2026-10-18 | Built-in provider reported available on both devices |
 | Steps/activity import | Health Connect read | Implemented and hardware-tested | Galaxy S25 Ultra SM-S938W, Android 16, 2026-10-18 | Steps-only grant imported 2,540 real 30-day source records; immediate repeat imported 0 changes from the same 2,540 records |
 | Samsung Health records | Samsung Health → Health Connect | Designed | — pending | Sharing must be enabled in Samsung Health |
-| Live watch heart rate | Wear OS Health Services | Designed | Galaxy Watch8 SM-L330, Wear OS 6.0; hardware test pending | Firmware/build `L330XXS2AZF4` |
-| Watch GPS | Health Services ExerciseClient | Designed | Galaxy Watch8 SM-L330, Wear OS 6.0; hardware test pending | Capability probe required |
+| Live watch heart rate | Wear OS Health Services | Implemented diagnostic and hardware-tested | Galaxy Watch8 SM-L330, Wear OS 6.0, 2026-10-18 | Firmware `L330XXS2AZF4`; explicit live test returned 86 bpm and did not save the sample |
+| Watch GPS | Health Services capability + device GPS feature | Capability reported; live fix pending | Galaxy Watch8 SM-L330, Wear OS 6.0, 2026-10-18 | Running location and GPS hardware reported supported; outdoor fix still required |
+| Watch haptics | Android vibrator | Implemented diagnostic and hardware-tested | Galaxy Watch8 SM-L330, Wear OS 6.0, 2026-10-18 | Explicit 150 ms pulse was physically felt |
+| Watch offline shell | Local Wear app | Hardware-tested with limitations | Galaxy Watch8 SM-L330, Wear OS 6.0, 2026-10-18 | Diagnostic launched and ran with 0 reachable phone nodes; recording/persistence not implemented yet |
 | Passive monitoring | Health Services passive listener | Designed | — pending | Battery measured before claims |
 | Samsung Health Data SDK | Approved partnership | Approval-dependent | — | Optional adapter; app ships without it |
 | Samsung Sensor SDK | Approved partnership | Approval-dependent | — | Optional adapter |

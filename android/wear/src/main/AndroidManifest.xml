@@ -3,10 +3,21 @@
 
     <uses-feature android:name="android.hardware.type.watch" />
 
+    <!-- Declared capabilities only — nothing is requested until the user
+         explicitly acts: heart rate when testing the live sensor, location
+         for a future user-started outdoor exercise (§7/§24). -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
-    <uses-permission android:name="android.permission.BODY_SENSORS" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- BODY_SENSORS covers API 35 and below; API 36/Wear OS 6 uses the
+         granular health permission only — never both. -->
+    <uses-permission
+        android:name="android.permission.BODY_SENSORS"
+        android:maxSdkVersion="35" />
     <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
 
     <application
         android:allowBackup="false"
@@ -14,8 +25,7 @@
         android:label="@string/app_name"
         android:theme="@android:style/Theme.DeviceDefault">
 
-        <!-- Standalone-capable: watch-only workouts record locally and sync
-             when the paired phone reconnects (§6/§7). -->
+        <!-- Companion app: no recording or standalone persistence exists yet. -->
         <meta-data
             android:name="com.google.android.wearable.standalone"
             android:value="false" />
