@@ -78,6 +78,10 @@
 - After explicit granular heart-rate consent, a live Health Services test
   returned 86 bpm. The user physically confirmed the explicit haptic pulse.
   The live BPM was displayed only and not stored or transmitted.
+- After the user explicitly enabled watch Location and granted fine-location
+  access, an outdoor Android GPS-provider diagnostic acquired a real fix. The
+  provider supplied no accuracy estimate. The diagnostic never read, displayed,
+  stored, logged or transmitted coordinates.
 - The Wear diagnostic ran with 0 reachable phone nodes, which verifies only
   that the shell can run disconnected. Phone enrollment, recording and durable
   watch persistence remain unimplemented.

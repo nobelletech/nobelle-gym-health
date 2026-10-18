@@ -2,6 +2,8 @@ package com.nobelle.wear
 
 import android.app.Application
 import android.content.pm.PackageManager
+import android.location.LocationListener
+import android.location.LocationManager
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -33,6 +35,10 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
         val heartRateGranted: Boolean = false,
         val testingHeartRate: Boolean = false,
         val latestHeartRateBpm: Double? = null,
+        val locationGranted: Boolean = false,
+        val testingGps: Boolean = false,
+        val gpsFixReceived: Boolean = false,
+        val gpsFixAccuracyM: Float? = null,
         val message: String? = null,
     )
 
@@ -69,6 +75,7 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
                 probing = false,
                 capabilities = capabilities,
                 heartRateGranted = hasHeartRatePermission(),
+                locationGranted = hasLocationPermission(),
             )
         }
     }
@@ -157,6 +164,92 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
+    fun requiredLocationPermission(): Array<String> =
+        arrayOf(WearLocationPermission.REQUIRED)
+
+    fun hasLocationPermission(): Boolean =
+        requiredLocationPermission().all {
+            getApplication<Application>().checkSelfPermission(it) ==
+                PackageManager.PERMISSION_GRANTED
+        }
+
+    fun onLocationPermissionResult(granted: Boolean) {
+        mutableState.value = mutableState.value.copy(locationGranted = granted)
+        if (granted) {
+            testGps()
+        } else {
+            showMessage("Location permission denied — GPS test did not run")
+        }
+    }
+
+    /**
+     * Explicit one-shot GPS acquisition check via Android LocationManager —
+     * not Health Services, not workout recording. Coordinates are never
+     * read, stored, logged or sent; only the reported accuracy is kept.
+     */
+    fun testGps() {
+        if (mutableState.value.testingGps) return
+        if (!hasLocationPermission()) {
+            showMessage("Grant location access first")
+            return
+        }
+        mutableState.value = mutableState.value.copy(
+            testingGps = true,
+            gpsFixReceived = false,
+            gpsFixAccuracyM = null,
+            message = null,
+        )
+        viewModelScope.launch {
+            val context = getApplication<Application>()
+            val manager = context.getSystemService(LocationManager::class.java)
+            if (manager == null ||
+                !manager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+            ) {
+                finishGpsTest("GPS provider is disabled")
+                return@launch
+            }
+            val fix = CompletableDeferred<Float?>()
+            val listener = object : LocationListener {
+                override fun onLocationChanged(location: android.location.Location) {
+                    // Only the reported accuracy is captured — never lat/lng/alt.
+                    fix.complete(location.accuracy.takeIf { location.hasAccuracy() })
+                }
+            }
+            try {
+                manager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER, 0L, 0f,
+                    context.mainExecutor, listener,
+                )
+                withTimeoutOrNull(GPS_TEST_TIMEOUT_MS) { fix.await() }
+                if (fix.isCompleted) {
+                    mutableState.value = mutableState.value.copy(
+                        testingGps = false,
+                        gpsFixReceived = true,
+                        gpsFixAccuracyM = fix.getCompleted(),
+                    )
+                } else {
+                    finishGpsTest(
+                        "No GPS fix received in 60 seconds — " +
+                            "try outdoors with a clear sky view",
+                    )
+                }
+            } catch (failure: SecurityException) {
+                finishGpsTest("Location permission not granted")
+            } catch (failure: Exception) {
+                finishGpsTest("GPS test failed")
+            } finally {
+                runCatching { manager.removeUpdates(listener) }
+            }
+        }
+    }
+
+    private fun finishGpsTest(message: String) {
+        mutableState.value = mutableState.value.copy(
+            testingGps = false,
+            message = message,
+        )
+    }
+
     /** One-shot haptic pulse on explicit tap only — no background vibration. */
     fun testHaptic() {
         val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -183,5 +276,6 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
 
     private companion object {
         const val LIVE_TEST_TIMEOUT_MS = 30_000L
+        const val GPS_TEST_TIMEOUT_MS = 60_000L
     }
 }

@@ -29,6 +29,10 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestMultiplePermissions(),
     ) { grants -> model.onSensorPermissionResult(grants) }
 
+    private val locationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted -> model.onLocationPermissionResult(granted) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -46,6 +50,15 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                     },
+                    onGps = {
+                        if (model.hasLocationPermission()) {
+                            model.testGps()
+                        } else {
+                            locationPermissionLauncher.launch(
+                                model.requiredLocationPermission().first(),
+                            )
+                        }
+                    },
                     onHaptic = model::testHaptic,
                 )
             }
@@ -58,6 +71,7 @@ fun WearHome(
     state: WearViewModel.WearUiState,
     onRefresh: () -> Unit,
     onHeartRate: () -> Unit,
+    onGps: () -> Unit,
     onHaptic: () -> Unit,
 ) {
     val listState = rememberScalingLazyListState()
@@ -126,6 +140,15 @@ fun WearHome(
                 )
             }
         }
+        if (state.gpsFixReceived) {
+            item {
+                Text(
+                    "${WearGpsLabels.gpsFix(state.gpsFixAccuracyM)}\n" +
+                        "Location was not saved",
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
         state.message?.let { message ->
             item {
                 Text(
@@ -151,6 +174,20 @@ fun WearHome(
                         if (state.testingHeartRate) "Testing…" else "Test live HR"
                     } else {
                         "Grant & test HR"
+                    },
+                )
+            }
+        }
+        item {
+            Button(
+                onClick = onGps,
+                enabled = !state.testingGps,
+            ) {
+                Text(
+                    if (state.locationGranted) {
+                        if (state.testingGps) "Testing GPS…" else "Test GPS fix"
+                    } else {
+                        "Grant & test GPS"
                     },
                 )
             }

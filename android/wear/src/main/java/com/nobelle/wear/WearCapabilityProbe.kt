@@ -13,6 +13,7 @@ import com.google.android.gms.tasks.Task
 import com.google.android.gms.wearable.Wearable
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlin.math.roundToInt
 import kotlinx.coroutines.suspendCancellableCoroutine
 
 /**
@@ -46,6 +47,18 @@ object WearHeartRatePermissions {
         } else {
             arrayOf(android.Manifest.permission.BODY_SENSORS)
         }
+}
+
+/** The only location permission the explicit GPS diagnostic needs. */
+object WearLocationPermission {
+    const val REQUIRED: String = android.Manifest.permission.ACCESS_FINE_LOCATION
+}
+
+/** Display text for the explicit GPS-fix diagnostic — pure for unit tests. */
+object WearGpsLabels {
+    fun gpsFix(accuracyM: Float?): String =
+        accuracyM?.let { "GPS fix acquired · accuracy about ${it.roundToInt()}m" }
+            ?: "GPS fix acquired"
 }
 
 /** Display labels for probe rows — pure so unit tests cover the wording. */
