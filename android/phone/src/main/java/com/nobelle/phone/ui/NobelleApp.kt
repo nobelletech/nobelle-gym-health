@@ -21,10 +21,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.nobelle.core.health.HealthConnectCategory
 import com.nobelle.phone.fasting.FastingBackdateInput
 import com.nobelle.phone.fasting.FastingViewModel
 import com.nobelle.phone.gym.GymVisitInput
 import com.nobelle.phone.gym.GymVisitViewModel
+import com.nobelle.phone.health.HealthConnectViewModel
 import com.nobelle.phone.ui.screens.CoachScreen
 import com.nobelle.phone.ui.screens.MyHealthScreen
 import com.nobelle.phone.ui.screens.ProfileScreen
@@ -72,6 +74,13 @@ fun NobelleApp(
     onFastingBackdate: (FastingBackdateInput) -> Unit,
     onFastingDelete: (String) -> Unit,
     onFastingTick: () -> Unit,
+    healthConnect: HealthConnectViewModel.HealthConnectUiState,
+    onToggleHealthCategory: (HealthConnectCategory) -> Unit,
+    onRequestHealthAccess: () -> Unit,
+    onImportHealth: () -> Unit,
+    onRefreshHealthAccess: () -> Unit,
+    showHealthRationale: Boolean,
+    onDismissHealthRationale: () -> Unit,
 ) {
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
@@ -130,6 +139,13 @@ fun NobelleApp(
                     onFastingBackdate = onFastingBackdate,
                     onFastingDelete = onFastingDelete,
                     onFastingTick = onFastingTick,
+                    healthConnect = healthConnect,
+                    onToggleHealthCategory = onToggleHealthCategory,
+                    onRequestHealthAccess = onRequestHealthAccess,
+                    onImportHealth = onImportHealth,
+                    onRefreshHealthAccess = onRefreshHealthAccess,
+                    showHealthRationale = showHealthRationale,
+                    onDismissHealthRationale = onDismissHealthRationale,
                 )
             }
             composable(Destination.PROGRESS.route) { ProgressScreen() }

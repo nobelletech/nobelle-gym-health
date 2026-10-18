@@ -1,5 +1,6 @@
 package com.nobelle.phone
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -7,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.nobelle.core.sync.AndroidDriveStore
@@ -15,6 +17,8 @@ import com.nobelle.phone.auth.DriveAuthorizationController
 import com.nobelle.phone.auth.DriveAuthViewModel
 import com.nobelle.phone.fasting.FastingViewModel
 import com.nobelle.phone.gym.GymVisitViewModel
+import com.nobelle.phone.health.HealthConnectController
+import com.nobelle.phone.health.HealthConnectViewModel
 import com.nobelle.phone.ui.NobelleApp
 import com.nobelle.phone.ui.NobelleTheme
 import com.nobelle.phone.workout.WorkoutViewModel
@@ -25,11 +29,16 @@ class MainActivity : ComponentActivity() {
     private val workoutModel by viewModels<WorkoutViewModel>()
     private val gymVisitModel by viewModels<GymVisitViewModel>()
     private val fastingModel by viewModels<FastingViewModel>()
+    private val healthConnectModel by viewModels<HealthConnectViewModel>()
     private lateinit var driveAuthorization: DriveAuthorizationController
+    private lateinit var healthConnect: HealthConnectController
+    private val healthRationaleRequested = mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         driveAuthorization = DriveAuthorizationController(this, driveAuthModel)
+        healthConnect = HealthConnectController(this, healthConnectModel)
+        if (isHealthRationaleIntent(intent)) healthRationaleRequested.value = true
         enableEdgeToEdge()
         setContent {
             val driveState by driveAuthModel.state.collectAsStateWithLifecycle()
@@ -37,10 +46,13 @@ class MainActivity : ComponentActivity() {
             val workoutState by workoutModel.state.collectAsStateWithLifecycle()
             val gymVisitState by gymVisitModel.state.collectAsStateWithLifecycle()
             val fastingState by fastingModel.state.collectAsStateWithLifecycle()
+            val healthConnectState by healthConnectModel.state.collectAsStateWithLifecycle()
+            val showHealthRationale by healthRationaleRequested
             LaunchedEffect(ownerId?.uid) {
                 workoutModel.selectOwner(ownerId)
                 gymVisitModel.selectOwner(ownerId)
                 fastingModel.selectOwner(ownerId)
+                healthConnectModel.selectOwner(ownerId)
             }
             NobelleTheme {
                 NobelleApp(
@@ -88,9 +100,30 @@ class MainActivity : ComponentActivity() {
                     onFastingBackdate = fastingModel::addBackdated,
                     onFastingDelete = fastingModel::deleteSession,
                     onFastingTick = fastingModel::tick,
+                    healthConnect = healthConnectState,
+                    onToggleHealthCategory = healthConnectModel::toggle,
+                    onRequestHealthAccess = healthConnect::requestSelectedPermissions,
+                    onImportHealth = healthConnectModel::importSelected,
+                    onRefreshHealthAccess = healthConnectModel::refreshPermissions,
+                    showHealthRationale = showHealthRationale,
+                    onDismissHealthRationale = { healthRationaleRequested.value = false },
                 )
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (isHealthRationaleIntent(intent)) healthRationaleRequested.value = true
+    }
+
+    private fun isHealthRationaleIntent(intent: Intent?): Boolean {
+        if (intent == null) return false
+        return intent.action == "androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" ||
+            (
+                intent.action == Intent.ACTION_VIEW_PERMISSION_USAGE &&
+                    intent.hasCategory("android.intent.category.HEALTH_PERMISSIONS")
+                )
     }
 
     private fun testDriveRoundTrip() {

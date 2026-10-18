@@ -17,6 +17,7 @@ android {
 
 dependencies {
     api(project(":android:core-model"))
-    implementation(libs.health.connect.client)
+    api(libs.health.connect.client) // public API exposes HealthConnectClient types
     implementation(libs.kotlinx.coroutines.android)
+    testImplementation(libs.junit)
 }

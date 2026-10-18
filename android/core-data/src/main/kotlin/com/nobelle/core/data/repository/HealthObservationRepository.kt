@@ -27,6 +27,38 @@ class HealthObservationRepository(
 
     suspend fun upsert(owner: OwnerId, observation: HealthObservation): HealthObservation = database.withTransaction {
         require(observation.ownerUID == owner.uid) { "Health observation does not belong to the requested owner" }
+        persist(owner, observation)
+        observation
+    }
+
+    /**
+     * Idempotent store for source-imported records. [HealthObservation.id] is
+     * deterministic for a given source record, so a re-import of identical
+     * content returns the stored row with no write and no extra outbox op.
+     * `importedUtc`, `revision` and `deletedUtc` are deliberately excluded
+     * from equality — they describe the import, not the source record.
+     */
+    suspend fun upsertImported(
+        owner: OwnerId,
+        incoming: HealthObservation,
+    ): Pair<HealthObservation, Boolean> = database.withTransaction {
+        require(incoming.ownerUID == owner.uid) { "Health observation does not belong to the requested owner" }
+        val existing = database.healthObservations().byId(owner.uid, incoming.id)
+            ?.let { decode(it, owner.uid) }
+        if (existing != null && existing.deletedUtc == null &&
+            existing.isSameSourceRecord(incoming)
+        ) {
+            return@withTransaction existing to false
+        }
+        val persisted = incoming.copy(
+            revision = (existing?.revision ?: 0) + 1,
+            deletedUtc = null,
+        )
+        persist(owner, persisted)
+        persisted to true
+    }
+
+    private suspend fun persist(owner: OwnerId, observation: HealthObservation) {
         database.healthObservations().upsert(observation.toEntity())
         val event = SyncEvent(
             schemaVersion = SYNC_EVENT_SCHEMA_VERSION,
@@ -41,8 +73,14 @@ class HealthObservationRepository(
             utc = now(),
         )
         database.outbox().enqueue(event.toOutboxEntity(now().toEpochMilliseconds()))
-        observation
     }
+
+    private fun HealthObservation.isSameSourceRecord(other: HealthObservation): Boolean =
+        copy(
+            importedUtc = other.importedUtc,
+            revision = other.revision,
+            deletedUtc = other.deletedUtc,
+        ) == other
 
     suspend fun delete(owner: OwnerId, id: String): HealthObservation = database.withTransaction {
         val entity = database.healthObservations().byId(owner.uid, id)

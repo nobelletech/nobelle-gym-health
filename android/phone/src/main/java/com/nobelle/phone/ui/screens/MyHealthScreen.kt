@@ -28,12 +28,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.health.connect.client.HealthConnectClient
+import com.nobelle.core.health.HealthConnectCategory
 import com.nobelle.core.model.FastingSchedule
 import com.nobelle.core.model.FastingSession
+import com.nobelle.core.model.HealthObservation
 import com.nobelle.core.model.MarkerGroup
+import com.nobelle.core.model.Provenance
 import com.nobelle.phone.fasting.FastingBackdateInput
 import com.nobelle.phone.fasting.FastingInputParser
 import com.nobelle.phone.fasting.FastingViewModel
+import com.nobelle.phone.health.HealthConnectViewModel
 import kotlin.time.Duration
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -65,6 +70,13 @@ fun MyHealthScreen(
     onFastingBackdate: (FastingBackdateInput) -> Unit,
     onFastingDelete: (String) -> Unit,
     onFastingTick: () -> Unit,
+    healthConnect: HealthConnectViewModel.HealthConnectUiState,
+    onToggleHealthCategory: (HealthConnectCategory) -> Unit,
+    onRequestHealthAccess: () -> Unit,
+    onImportHealth: () -> Unit,
+    onRefreshHealthAccess: () -> Unit,
+    showHealthRationale: Boolean,
+    onDismissHealthRationale: () -> Unit,
 ) {
     var showSetup by remember { mutableStateOf(false) }
     var showBackdate by remember { mutableStateOf(false) }
@@ -108,10 +120,12 @@ fun MyHealthScreen(
             onRequestDelete = { deletingId = it },
         )
 
-        InfoCard(
-            title = "Connections & Data",
-            body = "Watch, Health Connect sources, cloud sync choices and errors.",
-            trailing = { OutlinedButton(onClick = {}) { Text("Manage") } },
+        HealthConnectCard(
+            health = healthConnect,
+            onToggle = onToggleHealthCategory,
+            onRequest = onRequestHealthAccess,
+            onImport = onImportHealth,
+            onRefresh = onRefreshHealthAccess,
         )
 
         InfoCard(
@@ -197,6 +211,24 @@ fun MyHealthScreen(
             },
             dismissButton = {
                 TextButton(onClick = { deletingId = null }) { Text("Keep") }
+            },
+        )
+    }
+
+    if (showHealthRationale) {
+        AlertDialog(
+            onDismissRequest = onDismissHealthRationale,
+            title = { Text("How Nobelle uses health data") },
+            text = {
+                Text(
+                    "Nobelle reads only the health categories you select and grant. " +
+                        "Imported records are stored encrypted on this device and are queued " +
+                        "only for your own Google Drive — they are never sent anywhere else. " +
+                        "You can deny or revoke access at any time in Health Connect settings.",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = onDismissHealthRationale) { Text("Got it") }
             },
         )
     }
@@ -523,3 +555,152 @@ private fun Instant.localDate(zoneId: String): String {
 
 private val MarkerGroup.displayName: String
     get() = name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() }
+
+@Composable
+private fun HealthConnectCard(
+    health: HealthConnectViewModel.HealthConnectUiState,
+    onToggle: (HealthConnectCategory) -> Unit,
+    onRequest: () -> Unit,
+    onImport: () -> Unit,
+    onRefresh: () -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Health Connect", style = MaterialTheme.typography.titleMedium)
+            when {
+                !health.available -> {
+                    Text(
+                        if (health.sdkStatus ==
+                            HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED
+                        ) {
+                            "Health Connect is installed but its provider needs an update before records can be read."
+                        } else {
+                            "Health Connect is not available on this device."
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                !health.ownerAvailable -> {
+                    Text(
+                        "Health Connect is available. Connect your Google identity in Profile first — imported records stay scoped to your account on this device.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                else -> {
+                    Text(
+                        "Choose the categories Nobelle may read. Permission does not guarantee that a source has written records.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    HealthConnectCategory.entries.forEach { category ->
+                        FilterChip(
+                            selected = category in health.selected,
+                            onClick = { onToggle(category) },
+                            enabled = !health.loading,
+                            label = {
+                                Text(
+                                    "${category.displayName} · " +
+                                        if (category in health.granted) "Granted" else "Not granted",
+                                )
+                            },
+                            modifier = Modifier.semantics {
+                                contentDescription = category.displayName
+                            },
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = onRequest,
+                            enabled = !health.loading && health.selected.isNotEmpty(),
+                        ) { Text("Request selected access") }
+                        OutlinedButton(
+                            onClick = onImport,
+                            enabled = !health.loading &&
+                                (health.selected intersect health.granted).isNotEmpty(),
+                        ) { Text("Import selected") }
+                    }
+                    OutlinedButton(onClick = onRefresh, enabled = !health.loading) {
+                        Text("Refresh access")
+                    }
+                    health.lastImportCounts?.let { counts ->
+                        Text("Last import", style = MaterialTheme.typography.labelLarge)
+                        HealthConnectCategory.entries.forEach { category ->
+                            counts[category]?.let { count ->
+                                Text(
+                                    "${category.displayName}: $count source records",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                    health.lastImported.take(8).forEach { observation ->
+                        HealthObservationRow(observation)
+                    }
+                }
+            }
+            health.message?.let { message ->
+                Text(message, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+    }
+}
+
+@Composable
+private fun HealthObservationRow(observation: HealthObservation) {
+    Column(
+        Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Text(
+            "${observation.marker} · " +
+                "${observation.value.formatNeedless()} ${observation.unit}",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Text(
+            buildString {
+                append(observation.measuredLabel())
+                observation.source?.let {
+                    append(" · ${it.sourceNamespace.removePrefix("health_connect:")}")
+                }
+                append(
+                    if (observation.provenance == Provenance.MANUALLY_ENTERED) {
+                        " · Manual"
+                    } else {
+                        " · Imported"
+                    },
+                )
+                if (observation.importedUtc != null) append(" · Imported now")
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+private fun HealthObservation.measuredLabel(): String {
+    val offsetSec = timeZoneOffsetSec
+    return if (offsetSec != null) {
+        // Render the wall time the source observed: shift the UTC instant by
+        // the stored offset, then format in UTC so the shift is not applied
+        // a second time by the display zone.
+        val wall = Instant.fromEpochMilliseconds(
+            measuredUtc.toEpochMilliseconds() + offsetSec * 1000L,
+        ).toLocalDateTime(TimeZone.UTC)
+        val offsetHours = offsetSec / 3600
+        "%04d-%02d-%02d %02d:%02d (UTC%+d)".format(
+            wall.year, wall.monthNumber, wall.dayOfMonth, wall.hour, wall.minute,
+            offsetHours,
+        )
+    } else {
+        val utc = measuredUtc.toLocalDateTime(TimeZone.UTC)
+        "%04d-%02d-%02d %02d:%02d UTC".format(
+            utc.year, utc.monthNumber, utc.dayOfMonth, utc.hour, utc.minute,
+        )
+    }
+}
+
+private fun Double.formatNeedless(): String =
+    if (this % 1.0 == 0.0) toInt().toString() else toString()

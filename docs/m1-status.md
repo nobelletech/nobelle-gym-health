@@ -56,6 +56,11 @@
   The repository now treats an exact completed interval as canonical and the
   dialog has a synchronous submit guard. One duplicate was explicitly deleted
   by the owner; exactly one completed 12-hour record remained after restart.
+- Health Connect reported available on Samsung `SM-S928N`, Android 16. The user
+  selected only Steps and granted that read permission; Resting heart rate,
+  Weight and Sleep remained denied. A manual 30-day import completed without a
+  crash but found zero source records. This verifies availability, contextual
+  permission and an honest empty-data result, not a successful record import.
 - Android hardware tests passed: 3 encrypted-key tests and 17 Room migration,
   owner-isolation, transition, outbox and tombstone tests. Fourteen phone JVM
   tests also passed.
@@ -63,5 +68,6 @@
 ## Pending
 
 - Automatic Drive outbox upload, acknowledgements, retry/backoff and restore.
-- Health Connect import and watch enrollment.
+- A real Health Connect source-record import on the Galaxy S25 Ultra and watch
+  enrollment.
 - Independent network-capture inspection.
