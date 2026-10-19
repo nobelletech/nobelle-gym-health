@@ -25,6 +25,7 @@ import com.nobelle.core.health.HealthConnectCategory
 import com.nobelle.phone.fasting.FastingBackdateInput
 import com.nobelle.phone.fasting.FastingViewModel
 import com.nobelle.phone.gym.GymVisitInput
+import com.nobelle.phone.health.ManualEntryInput
 import com.nobelle.phone.gym.GymVisitViewModel
 import com.nobelle.phone.health.HealthConnectViewModel
 import com.nobelle.phone.ui.screens.CoachScreen
@@ -84,6 +85,8 @@ fun NobelleApp(
     onRequestHealthAccess: () -> Unit,
     onImportHealth: () -> Unit,
     onRefreshHealthAccess: () -> Unit,
+    onAddManualHealthEntry: (ManualEntryInput) -> Unit,
+    onDeleteManualHealthEntry: (String) -> Unit,
     showHealthRationale: Boolean,
     onDismissHealthRationale: () -> Unit,
     onProgressRefresh: () -> Unit,
@@ -154,6 +157,8 @@ fun NobelleApp(
                     onRequestHealthAccess = onRequestHealthAccess,
                     onImportHealth = onImportHealth,
                     onRefreshHealthAccess = onRefreshHealthAccess,
+                    onAddManualEntry = onAddManualHealthEntry,
+                    onDeleteManualEntry = onDeleteManualHealthEntry,
                     showHealthRationale = showHealthRationale,
                     onDismissHealthRationale = onDismissHealthRationale,
                 )

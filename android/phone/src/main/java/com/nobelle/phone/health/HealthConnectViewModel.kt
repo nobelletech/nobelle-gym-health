@@ -9,14 +9,21 @@ import com.nobelle.core.health.CapabilityProbe
 import com.nobelle.core.health.HealthConnectCategory
 import com.nobelle.core.health.HealthConnectImporter
 import com.nobelle.core.model.HealthObservation
+import com.nobelle.core.model.MarkerGroup
 import com.nobelle.core.model.OwnerId
+import com.nobelle.core.model.Provenance
+import com.nobelle.core.model.RecordingMethod
+import com.nobelle.core.model.SourceKey
 import com.nobelle.phone.NobelleApplication
 import java.time.Duration
+import java.util.UUID
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.offsetIn
 import kotlinx.datetime.toLocalDateTime
 
 /**
@@ -236,6 +243,72 @@ class HealthConnectViewModel(application: Application) : AndroidViewModel(applic
                     )
                 },
             )
+        }
+    }
+
+    fun addManual(input: ManualEntryInput) = mutate { owner, repo ->
+        val id = UUID.randomUUID().toString()
+        val now = Clock.System.now()
+        val measured = now - input.minutesAgo.minutes
+        val offsetSec = now.offsetIn(TimeZone.currentSystemDefault()).totalSeconds
+        val markerDef = ManualHealthMarkers.find(input.marker)
+            ?: return@mutate "Unknown marker"
+        val observation = HealthObservation(
+            id = id,
+            ownerUID = owner.uid,
+            marker = input.marker,
+            group = markerDef.group,
+            value = input.value,
+            unit = markerDef.unit,
+            rawValue = input.value,
+            rawUnit = markerDef.unit,
+            measuredUtc = measured,
+            timeZoneOffsetSec = offsetSec,
+            provenance = Provenance.MANUALLY_ENTERED,
+            method = RecordingMethod.MANUAL,
+            source = SourceKey(
+                sourceNamespace = "manual",
+                sourceRecordId = id,
+                originDevice = null,
+                importRoute = "Manual entry",
+            ),
+            qualityFlag = HealthObservation.QualityFlag.OK,
+            context = mapOf("entry" to "manual"),
+            importedUtc = now,
+            revision = 1,
+        )
+        repo.upsert(owner, observation)
+        "Record saved"
+    }
+
+    fun deleteManual(id: String) = mutate { owner, repo ->
+        repo.delete(owner, id)
+        "Record deleted"
+    }
+
+    private fun mutate(
+        block: suspend (OwnerId, HealthObservationRepository) -> String?,
+    ) {
+        val owner = selectedOwner ?: run {
+            showMessage("Connect your Google identity first")
+            return
+        }
+        val repo = repository ?: run {
+            showMessage(INIT_ERROR)
+            return
+        }
+        if (mutableState.value.loading) return
+        val generation = selectionGeneration
+        mutableState.value = mutableState.value.copy(loading = true, message = null)
+        viewModelScope.launch {
+            val message = try {
+                block(owner, repo)
+            } catch (failure: Exception) {
+                failure.message?.takeIf { it.isNotBlank() } ?: "Health action failed"
+            }
+            if (generation != selectionGeneration || selectedOwner?.uid != owner.uid) return@launch
+            mutableState.value = mutableState.value.copy(loading = false, message = message)
+            refreshStored(owner)
         }
     }
 

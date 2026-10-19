@@ -13,6 +13,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -25,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -39,6 +41,9 @@ import com.nobelle.phone.fasting.FastingBackdateInput
 import com.nobelle.phone.fasting.FastingInputParser
 import com.nobelle.phone.fasting.FastingViewModel
 import com.nobelle.phone.health.HealthConnectViewModel
+import com.nobelle.phone.health.ManualEntryInput
+import com.nobelle.phone.health.ManualEntryInputParser
+import com.nobelle.phone.health.ManualHealthMarkers
 import com.nobelle.phone.health.MarkerSummary
 import kotlin.time.Duration
 import kotlinx.coroutines.delay
@@ -76,6 +81,8 @@ fun MyHealthScreen(
     onRequestHealthAccess: () -> Unit,
     onImportHealth: () -> Unit,
     onRefreshHealthAccess: () -> Unit,
+    onAddManualEntry: (ManualEntryInput) -> Unit,
+    onDeleteManualEntry: (String) -> Unit,
     showHealthRationale: Boolean,
     onDismissHealthRationale: () -> Unit,
 ) {
@@ -84,6 +91,8 @@ fun MyHealthScreen(
     var confirmDisable by remember { mutableStateOf(false) }
     var confirmCancel by remember { mutableStateOf(false) }
     var deletingId by remember { mutableStateOf<String?>(null) }
+    var showManualEntry by remember { mutableStateOf(false) }
+    var deletingManualId by remember { mutableStateOf<String?>(null) }
 
     // Elapsed time re-renders while a fast is active; tick() only updates the
     // clock in UI state — it never writes or auto-ends anything.
@@ -119,6 +128,17 @@ fun MyHealthScreen(
             StoredRecordsCard(summaries = healthConnect.storedSummaries)
         }
 
+        if (healthConnect.ownerAvailable) {
+            val manualRecords = healthConnect.storedObservations.filter {
+                it.provenance == Provenance.MANUALLY_ENTERED && it.deletedUtc == null
+            }
+            ManualRecordsCard(
+                records = manualRecords,
+                onAdd = { showManualEntry = true },
+                onRequestDelete = { deletingManualId = it },
+            )
+        }
+
         fasting.message?.let { message ->
             Text(message, color = MaterialTheme.colorScheme.error)
         }
@@ -140,6 +160,7 @@ fun MyHealthScreen(
             onRequest = onRequestHealthAccess,
             onImport = onImportHealth,
             onRefresh = onRefreshHealthAccess,
+            onAddManual = { showManualEntry = true },
         )
 
         InfoCard(
@@ -225,6 +246,36 @@ fun MyHealthScreen(
             },
             dismissButton = {
                 TextButton(onClick = { deletingId = null }) { Text("Keep") }
+            },
+        )
+    }
+
+    if (showManualEntry) {
+        ManualEntryDialog(
+            enabled = !healthConnect.loading,
+            onDismiss = { showManualEntry = false },
+            onSubmit = { input ->
+                showManualEntry = false
+                onAddManualEntry(input)
+            },
+        )
+    }
+
+    deletingManualId?.let { id ->
+        AlertDialog(
+            onDismissRequest = { deletingManualId = null },
+            title = { Text("Delete this manual record?") },
+            text = { Text("This removes the manually entered record from this device and queues a deletion for sync.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        deletingManualId = null
+                        onDeleteManualEntry(id)
+                    }
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { deletingManualId = null }) { Text("Keep") }
             },
         )
     }
@@ -585,6 +636,7 @@ private fun HealthConnectCard(
     onRequest: () -> Unit,
     onImport: () -> Unit,
     onRefresh: () -> Unit,
+    onAddManual: () -> Unit,
 ) {
     var showImportDetails by remember { mutableStateOf(false) }
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -649,6 +701,11 @@ private fun HealthConnectCard(
                         enabled = !health.loading,
                         modifier = Modifier.fillMaxWidth(),
                     ) { Text("Refresh access") }
+                    TextButton(
+                        onClick = onAddManual,
+                        enabled = !health.loading,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text("Add manual record") }
                     if (health.storedCount > 0) {
                         Text(
                             "${health.storedCount} records stored on this device",
@@ -689,6 +746,188 @@ private fun HealthConnectCard(
             health.message?.let { message ->
                 Text(message, style = MaterialTheme.typography.bodyMedium)
             }
+        }
+    }
+}
+
+/**
+ * Owner-managed manual records. Only [Provenance.MANUALLY_ENTERED] rows are
+ * listed here; imported source rows are not deletable in this screen because
+ * they would reappear on the next source sync.
+ */
+@Composable
+private fun ManualRecordsCard(
+    records: List<HealthObservation>,
+    onAdd: () -> Unit,
+    onRequestDelete: (String) -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Manual records", style = MaterialTheme.typography.titleMedium)
+            if (records.isEmpty()) {
+                Text(
+                    "Add measurements that no source app writes, such as weight or blood pressure.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                records.sortedByDescending { it.measuredUtc }.take(5).forEach { observation ->
+                    ManualRecordRow(
+                        observation = observation,
+                        onDelete = { onRequestDelete(observation.id) },
+                    )
+                }
+                if (records.size > 5) {
+                    Text(
+                        "…and ${records.size - 5} earlier manual record" +
+                            if (records.size - 5 == 1) "" else "s",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            OutlinedButton(
+                onClick = onAdd,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Add manual record") }
+        }
+    }
+}
+
+@Composable
+private fun ManualRecordRow(
+    observation: HealthObservation,
+    onDelete: () -> Unit,
+) {
+    Column(
+        Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        val markerDef = ManualHealthMarkers.find(observation.marker)
+        Text(
+            "${markerDef?.label ?: observation.marker} · " +
+                "${observation.value.formatNeedless()} ${observation.unit}",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Text(
+            observation.measuredLabel() + " · Manual",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TextButton(onClick = onDelete) { Text("Delete") }
+    }
+}
+
+/**
+ * Fixed-marker form for a manually recorded health observation. The measured
+ * time defaults to now and can be shifted backwards by whole minutes.
+ */
+@Composable
+private fun ManualEntryDialog(
+    enabled: Boolean,
+    onDismiss: () -> Unit,
+    onSubmit: (ManualEntryInput) -> Unit,
+) {
+    var selectedMarker by remember { mutableStateOf(ManualHealthMarkers.ALL.first().marker) }
+    var value by remember { mutableStateOf("") }
+    var minutesAgo by remember { mutableStateOf("0") }
+    var formError by remember { mutableStateOf<String?>(null) }
+    var submitted by remember { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add manual record") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "Choose a marker and enter the measured value. The record is stored on this device and queued for sync.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                ManualMarkerSelector(
+                    selected = selectedMarker,
+                    onSelect = { selectedMarker = it },
+                    enabled = enabled,
+                )
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = { value = it },
+                    label = { Text("Value") },
+                    suffix = {
+                        Text(ManualHealthMarkers.find(selectedMarker)?.unit ?: "")
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = minutesAgo,
+                    onValueChange = { minutesAgo = it },
+                    label = { Text("Minutes ago (optional)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                formError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = enabled && !submitted,
+                onClick = {
+                    when (val parsed = ManualEntryInputParser.parse(
+                        marker = selectedMarker,
+                        value = value,
+                        minutesAgo = minutesAgo,
+                    )) {
+                        is ManualEntryInputParser.Result.Ok -> {
+                            submitted = true
+                            onSubmit(parsed.input)
+                        }
+                        is ManualEntryInputParser.Result.Invalid -> formError = parsed.message
+                    }
+                },
+            ) { Text("Save") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+}
+
+@Composable
+private fun ManualMarkerSelector(
+    selected: String,
+    onSelect: (String) -> Unit,
+    enabled: Boolean,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedDef = ManualHealthMarkers.find(selected) ?: ManualHealthMarkers.ALL.first()
+    Column {
+        OutlinedButton(
+            onClick = { expanded = true },
+            enabled = enabled,
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text(selectedDef.label) }
+        if (expanded) {
+            AlertDialog(
+                onDismissRequest = { expanded = false },
+                title = { Text("Choose marker") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        ManualHealthMarkers.ALL.forEach { marker ->
+                            TextButton(
+                                onClick = {
+                                    onSelect(marker.marker)
+                                    expanded = false
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) { Text(marker.label) }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { expanded = false }) { Text("Cancel") }
+                },
+            )
         }
     }
 }

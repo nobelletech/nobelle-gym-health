@@ -114,6 +114,8 @@ class MainActivity : ComponentActivity() {
                     onRequestHealthAccess = healthConnect::requestSelectedPermissions,
                     onImportHealth = healthConnectModel::importSelected,
                     onRefreshHealthAccess = healthConnectModel::refreshPermissions,
+                    onAddManualHealthEntry = healthConnectModel::addManual,
+                    onDeleteManualHealthEntry = healthConnectModel::deleteManual,
                     showHealthRationale = showHealthRationale,
                     onDismissHealthRationale = { healthRationaleRequested.value = false },
                     // Re-running each ViewModel's owner-selection path is the
