@@ -17,6 +17,9 @@ import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
+import com.nobelle.core.model.WatchEnrollState
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * Wear shell (§7): hardware/runtime capability diagnostic only. There is no
@@ -38,8 +41,15 @@ class MainActivity : ComponentActivity() {
         setContent {
             WearTheme {
                 val state by model.state.collectAsStateWithLifecycle()
+                val enroll by model.enrollState.collectAsStateWithLifecycle()
+                val enrollMessage by model.enrollMessage.collectAsStateWithLifecycle()
                 WearHome(
                     state = state,
+                    enroll = enroll,
+                    enrollMessage = enrollMessage,
+                    onEnroll = model::enrollWatch,
+                    onEnrollCancel = model::cancelEnroll,
+                    onForgetPhone = model::forgetPhone,
                     onRefresh = model::probe,
                     onHeartRate = {
                         if (model.hasHeartRatePermission()) {
@@ -69,6 +79,11 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun WearHome(
     state: WearViewModel.WearUiState,
+    enroll: WatchEnrollState,
+    enrollMessage: String?,
+    onEnroll: () -> Unit,
+    onEnrollCancel: () -> Unit,
+    onForgetPhone: () -> Unit,
     onRefresh: () -> Unit,
     onHeartRate: () -> Unit,
     onGps: () -> Unit,
@@ -208,10 +223,80 @@ fun WearHome(
         }
         item {
             Text(
-                "Workout recording not implemented yet\nPhone enrollment not implemented",
+                "Workout recording not implemented yet",
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
             )
+        }
+
+        // Phone enrollment (§7): the 6-digit code is the only thing shown —
+        // the derived enrollment token is never displayed or stored in
+        // plaintext.
+        when (val enrollState = enroll) {
+            is WatchEnrollState.Enrolled -> {
+                val enrolledDate = enrollState.enrolledUtc
+                    .toLocalDateTime(TimeZone.currentSystemDefault())
+                    .date
+                item {
+                    Text(
+                        "Enrolled with phone\nsince $enrolledDate",
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+                item {
+                    Button(
+                        onClick = onForgetPhone,
+                        modifier = Modifier.fillMaxWidth(0.8f),
+                    ) { Text("Forget phone", textAlign = TextAlign.Center) }
+                }
+            }
+            is WatchEnrollState.Waiting -> {
+                item {
+                    Text(
+                        enrollState.code,
+                        style = MaterialTheme.typography.displaySmall,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+                item {
+                    Text(
+                        "Confirm this code on the phone",
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+                item {
+                    Button(
+                        onClick = onEnrollCancel,
+                        modifier = Modifier.fillMaxWidth(0.8f),
+                    ) { Text("Cancel", textAlign = TextAlign.Center) }
+                }
+            }
+            WatchEnrollState.NotEnrolled -> {
+                item {
+                    Button(
+                        onClick = onEnroll,
+                        modifier = Modifier.fillMaxWidth(0.8f),
+                    ) { Text("Enroll watch", textAlign = TextAlign.Center) }
+                }
+                item {
+                    Text(
+                        "Pairing is optional — it needs the Nobelle phone app",
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+        }
+        enrollMessage?.let { message ->
+            item {
+                Text(
+                    message,
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 }

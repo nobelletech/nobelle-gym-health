@@ -143,7 +143,7 @@ object WearCapabilityProbe {
         }
 }
 
-private suspend fun <T> Task<T>.awaitTask(): T =
+internal suspend fun <T> Task<T>.awaitTask(): T =
     suspendCancellableCoroutine { cont ->
         addOnSuccessListener { if (cont.isActive) cont.resume(it) }
         addOnFailureListener { if (cont.isActive) cont.resumeWithException(it) }

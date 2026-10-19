@@ -45,6 +45,7 @@ import com.nobelle.phone.gym.GymCategoryCatalog
 import com.nobelle.phone.gym.GymVisitInput
 import com.nobelle.phone.gym.GymVisitInputParser
 import com.nobelle.phone.gym.GymVisitViewModel
+import com.nobelle.phone.wear.WatchEnrollViewModel
 import com.nobelle.phone.workout.ExercisePreset
 import com.nobelle.phone.workout.ExercisePresetCatalog
 import com.nobelle.phone.workout.SetEntryInput
@@ -74,6 +75,10 @@ fun TodayScreen(
     onEndVisit: (String) -> Unit,
     onEditVisit: (String, GymVisitInput) -> Unit,
     onDeleteVisit: (String) -> Unit,
+    watchEnroll: WatchEnrollViewModel.UiState,
+    onWatchConfirm: () -> Unit,
+    onWatchReject: () -> Unit,
+    onWatchForget: () -> Unit,
 ) {
     var confirmDiscard by remember { mutableStateOf(false) }
 
@@ -103,10 +108,11 @@ fun TodayScreen(
             SetsCard(sets = workout.sets)
         }
 
-        InfoCard(
-            title = "Watch",
-            body = "Not paired. Pairing is optional — phone-only use is fully supported.",
-            trailing = { OutlinedButton(onClick = {}) { Text("Pair") } },
+        WatchEnrollCard(
+            watch = watchEnroll,
+            onConfirm = onWatchConfirm,
+            onReject = onWatchReject,
+            onForget = onWatchForget,
         )
 
         InfoCard(
@@ -219,6 +225,94 @@ private fun WorkoutCard(
                         ) { Text("Discard", maxLines = 1) }
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Watch enrollment card (§7). Pairing is optional and owner-scoped; the card
+ * never displays or stores the enrollment token — only the 6-digit code the
+ * user compares against the watch screen.
+ */
+@Composable
+private fun WatchEnrollCard(
+    watch: WatchEnrollViewModel.UiState,
+    onConfirm: () -> Unit,
+    onReject: () -> Unit,
+    onForget: () -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("Watch", style = MaterialTheme.typography.titleMedium)
+            val pending = watch.pending
+            val enrolled = watch.enrolled
+            when {
+                !watch.ownerAvailable -> {
+                    Text(
+                        "Watch pairing is unavailable until you connect your Google identity in Profile. Phone-only use is fully supported.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                pending != null -> {
+                    Text(
+                        "Pairing request from ${pending.watchModel}",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        pending.code,
+                        style = MaterialTheme.typography.headlineMedium,
+                    )
+                    Text(
+                        "Compare with the code shown on your watch",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = onConfirm,
+                            enabled = !watch.busy,
+                            modifier = Modifier.weight(1f),
+                        ) { Text("Confirm") }
+                        OutlinedButton(
+                            onClick = onReject,
+                            enabled = !watch.busy,
+                            modifier = Modifier.weight(1f),
+                        ) { Text("Reject") }
+                    }
+                }
+                enrolled != null -> {
+                    val enrolledDate = enrolled.enrolledUtc
+                        .toLocalDateTime(TimeZone.currentSystemDefault()).date
+                    Text(
+                        "Enrolled: ${enrolled.watchModel} · since $enrolledDate",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        "Data sync over phone is not implemented yet.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedButton(onClick = onForget, enabled = !watch.busy) {
+                        Text("Forget watch")
+                    }
+                }
+                else -> {
+                    Text(
+                        "Not paired. Pairing is optional — phone-only use is fully supported.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        "To pair, open the Nobelle app on your watch and tap \"Enroll watch\" — it will show a code to confirm here.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            watch.message?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall)
             }
         }
     }

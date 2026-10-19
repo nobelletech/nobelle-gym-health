@@ -32,6 +32,7 @@ import com.nobelle.phone.ui.screens.MyHealthScreen
 import com.nobelle.phone.ui.screens.ProfileScreen
 import com.nobelle.phone.ui.screens.ProgressScreen
 import com.nobelle.phone.ui.screens.TodayScreen
+import com.nobelle.phone.wear.WatchEnrollViewModel
 import com.nobelle.phone.workout.SetEntryInput
 import com.nobelle.phone.workout.WorkoutViewModel
 
@@ -65,6 +66,10 @@ fun NobelleApp(
     onEndVisit: (String) -> Unit,
     onEditVisit: (String, GymVisitInput) -> Unit,
     onDeleteVisit: (String) -> Unit,
+    watchEnroll: WatchEnrollViewModel.UiState,
+    onWatchConfirm: () -> Unit,
+    onWatchReject: () -> Unit,
+    onWatchForget: () -> Unit,
     fasting: FastingViewModel.FastingUiState,
     onFastingEnable: (fastingHours: Int, startLocalTime: String) -> Unit,
     onFastingDisable: () -> Unit,
@@ -125,6 +130,10 @@ fun NobelleApp(
                     onEndVisit = onEndVisit,
                     onEditVisit = onEditVisit,
                     onDeleteVisit = onDeleteVisit,
+                    watchEnroll = watchEnroll,
+                    onWatchConfirm = onWatchConfirm,
+                    onWatchReject = onWatchReject,
+                    onWatchForget = onWatchForget,
                 )
             }
             composable(Destination.COACH.route) { CoachScreen() }

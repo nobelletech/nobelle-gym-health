@@ -21,6 +21,7 @@ import com.nobelle.phone.health.HealthConnectController
 import com.nobelle.phone.health.HealthConnectViewModel
 import com.nobelle.phone.ui.NobelleApp
 import com.nobelle.phone.ui.NobelleTheme
+import com.nobelle.phone.wear.WatchEnrollViewModel
 import com.nobelle.phone.workout.WorkoutViewModel
 import kotlinx.coroutines.launch
 
@@ -30,6 +31,7 @@ class MainActivity : ComponentActivity() {
     private val gymVisitModel by viewModels<GymVisitViewModel>()
     private val fastingModel by viewModels<FastingViewModel>()
     private val healthConnectModel by viewModels<HealthConnectViewModel>()
+    private val watchEnrollModel by viewModels<WatchEnrollViewModel>()
     private lateinit var driveAuthorization: DriveAuthorizationController
     private lateinit var healthConnect: HealthConnectController
     private val healthRationaleRequested = mutableStateOf(false)
@@ -47,12 +49,14 @@ class MainActivity : ComponentActivity() {
             val gymVisitState by gymVisitModel.state.collectAsStateWithLifecycle()
             val fastingState by fastingModel.state.collectAsStateWithLifecycle()
             val healthConnectState by healthConnectModel.state.collectAsStateWithLifecycle()
+            val watchEnrollState by watchEnrollModel.state.collectAsStateWithLifecycle()
             val showHealthRationale by healthRationaleRequested
             LaunchedEffect(ownerId?.uid) {
                 workoutModel.selectOwner(ownerId)
                 gymVisitModel.selectOwner(ownerId)
                 fastingModel.selectOwner(ownerId)
                 healthConnectModel.selectOwner(ownerId)
+                watchEnrollModel.selectOwner(ownerId)
             }
             NobelleTheme {
                 NobelleApp(
@@ -91,6 +95,10 @@ class MainActivity : ComponentActivity() {
                     onEndVisit = gymVisitModel::endVisit,
                     onEditVisit = gymVisitModel::editVisit,
                     onDeleteVisit = gymVisitModel::deleteVisit,
+                    watchEnroll = watchEnrollState,
+                    onWatchConfirm = watchEnrollModel::confirmPending,
+                    onWatchReject = watchEnrollModel::rejectPending,
+                    onWatchForget = watchEnrollModel::forgetWatch,
                     fasting = fastingState,
                     onFastingEnable = fastingModel::enable,
                     onFastingDisable = fastingModel::disable,

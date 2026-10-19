@@ -13,6 +13,8 @@ on every probe.
 | Watch GPS | Health Services capability + Android GPS provider | Implemented diagnostic and hardware-tested | Galaxy Watch8 SM-L330, Wear OS 6.0, 2026-10-18 | Running location and GPS hardware reported supported; explicit test acquired a real fix but provider reported no accuracy estimate; coordinates were never read or saved |
 | Watch haptics | Android vibrator | Implemented diagnostic and hardware-tested | Galaxy Watch8 SM-L330, Wear OS 6.0, 2026-10-18 | Explicit 150 ms pulse was physically felt |
 | Watch offline shell | Local Wear app | Hardware-tested with limitations | Galaxy Watch8 SM-L330, Wear OS 6.0, 2026-10-18 | Diagnostic launched and ran with 0 reachable phone nodes; recording/persistence not implemented yet |
+| Phone↔watch secure enrollment | Wear OS Data Layer messages (`/nobelle/enroll/v1/`) | Implemented — verified pending hardware | — pending Galaxy Watch8 ↔ Galaxy S25 Ultra | ECDH P-256 + HKDF-SHA256 token, user-compared 6-digit code, Keystore-wrapped owner-scoped records, revoke both directions; enrollment only — no health data or sync transfers |
+| Phone↔watch data sync | Wear OS Data Layer | Not implemented | — pending | Enrollment establishes the channel credential only; no event transfer exists yet |
 | Passive monitoring | Health Services passive listener | Designed | — pending | Battery measured before claims |
 | Samsung Health Data SDK | Approved partnership | Approval-dependent | — | Optional adapter; app ships without it |
 | Samsung Sensor SDK | Approved partnership | Approval-dependent | — | Optional adapter |

@@ -22,6 +22,21 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Nobelle">
 
+        <!-- Receives watch enrollment request/revoke messages even when the
+             app is not in the foreground. Exported is required by the Wear
+             OS Data Layer contract; the filter only binds /nobelle paths. -->
+        <service
+            android:name=".wear.EnrollListenerService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <data
+                    android:scheme="wear"
+                    android:host="*"
+                    android:pathPrefix="/nobelle" />
+            </intent-filter>
+        </service>
+
         <activity
             android:name="net.openid.appauth.RedirectUriReceiverActivity"
             android:theme="@style/Theme.Nobelle.AppAuth" />

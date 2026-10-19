@@ -48,6 +48,7 @@ dependencies {
     implementation(libs.guava)
     implementation(libs.play.services.wearable)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.activity.compose)
     implementation(libs.lifecycle.viewmodel.compose)
 

@@ -29,6 +29,11 @@ import kotlinx.coroutines.withTimeoutOrNull
  * only, and a reachable phone node is not enrollment.
  */
 class WearViewModel(application: Application) : AndroidViewModel(application) {
+    /** Phone enrollment state — delegated to the shared coordinator so the
+     * listener service and the UI observe the same session. */
+    val enrollState = WearEnrollmentCoordinator.state
+    val enrollMessage = WearEnrollmentCoordinator.message
+
     data class WearUiState(
         val capabilities: WearCapabilities? = null,
         val probing: Boolean = false,
@@ -46,7 +51,20 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
     val state: StateFlow<WearUiState> = mutableState
 
     init {
+        WearEnrollmentCoordinator.attach(application)
         probe()
+    }
+
+    fun enrollWatch() {
+        WearEnrollmentCoordinator.beginEnroll(getApplication())
+    }
+
+    fun cancelEnroll() {
+        WearEnrollmentCoordinator.cancel()
+    }
+
+    fun forgetPhone() {
+        WearEnrollmentCoordinator.forgetPhone(getApplication())
     }
 
     fun probe() {

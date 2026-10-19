@@ -61,6 +61,7 @@ dependencies {
     implementation(libs.navigation.compose)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.play.services.wearable)
     implementation(libs.app.auth)
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
