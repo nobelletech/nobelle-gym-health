@@ -39,6 +39,7 @@ import com.nobelle.phone.fasting.FastingBackdateInput
 import com.nobelle.phone.fasting.FastingInputParser
 import com.nobelle.phone.fasting.FastingViewModel
 import com.nobelle.phone.health.HealthConnectViewModel
+import com.nobelle.phone.health.MarkerSummary
 import kotlin.time.Duration
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -99,10 +100,23 @@ fun MyHealthScreen(
         ScreenTitle("My Health")
 
         MarkerGroup.entries.forEach { group ->
+            val groupMarkers = healthConnect.storedSummaries.filter { it.group == group }
             InfoCard(
                 title = group.displayName,
-                body = "No data yet. Connect a source or add a manual entry.",
+                body = if (groupMarkers.isEmpty()) {
+                    "No data yet. Connect a source or add a manual entry."
+                } else {
+                    val records = groupMarkers.sumOf { it.count }
+                    val latest = groupMarkers.maxOf { it.latestMeasuredUtc }
+                        .toLocalDateTime(TimeZone.currentSystemDefault())
+                    "${groupMarkers.size} marker${if (groupMarkers.size == 1) "" else "s"} · " +
+                        "$records record${if (records == 1) "" else "s"} · latest ${latest.date}"
+                },
             )
+        }
+
+        if (healthConnect.ownerAvailable && healthConnect.storedSummaries.isNotEmpty()) {
+            StoredRecordsCard(summaries = healthConnect.storedSummaries)
         }
 
         fasting.message?.let { message ->
@@ -315,6 +329,14 @@ private fun FastingCard(
                         session = session,
                         enabled = !fasting.loading,
                         onDelete = { onRequestDelete(session.id) },
+                    )
+                }
+                if (fasting.history.size > 5) {
+                    Text(
+                        "…and ${fasting.history.size - 5} earlier fast" +
+                            if (fasting.history.size - 5 == 1) "" else "s",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -564,6 +586,7 @@ private fun HealthConnectCard(
     onImport: () -> Unit,
     onRefresh: () -> Unit,
 ) {
+    var showImportDetails by remember { mutableStateOf(false) }
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Health Connect", style = MaterialTheme.typography.titleMedium)
@@ -626,25 +649,89 @@ private fun HealthConnectCard(
                         enabled = !health.loading,
                         modifier = Modifier.fillMaxWidth(),
                     ) { Text("Refresh access") }
-                    health.lastImportCounts?.let { counts ->
-                        Text("Last import", style = MaterialTheme.typography.labelLarge)
-                        HealthConnectCategory.entries.forEach { category ->
-                            counts[category]?.let { count ->
-                                Text(
-                                    "${category.displayName}: $count source records",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                    if (health.storedCount > 0) {
+                        Text(
+                            "${health.storedCount} records stored on this device",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (health.lastImportCounts != null || health.lastImported.isNotEmpty()) {
+                        TextButton(onClick = { showImportDetails = !showImportDetails }) {
+                            Text(
+                                if (showImportDetails) {
+                                    "Hide import details"
+                                } else {
+                                    "Import details"
+                                },
+                            )
+                        }
+                        if (showImportDetails) {
+                            health.lastImportCounts?.let { counts ->
+                                Text("Last import", style = MaterialTheme.typography.labelLarge)
+                                HealthConnectCategory.entries.forEach { category ->
+                                    counts[category]?.let { count ->
+                                        Text(
+                                            "${category.displayName}: $count source records",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                            }
+                            health.lastImported.take(8).forEach { observation ->
+                                HealthObservationRow(observation)
                             }
                         }
-                    }
-                    health.lastImported.take(8).forEach { observation ->
-                        HealthObservationRow(observation)
                     }
                 }
             }
             health.message?.let { message ->
                 Text(message, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+    }
+}
+
+/**
+ * Aggregated view of every health observation stored for the owner —
+ * imported or restored — grouped per marker. Raw per-record diagnostics stay
+ * inside the Health Connect card's collapsed import details.
+ */
+@Composable
+private fun StoredRecordsCard(summaries: List<MarkerSummary>) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Records on this device", style = MaterialTheme.typography.titleMedium)
+            summaries.forEach { summary ->
+                val latest = summary.latestMeasuredUtc
+                    .toLocalDateTime(TimeZone.currentSystemDefault())
+                Column(
+                    Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        summary.marker.replace('_', ' '),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        buildString {
+                            append(
+                                "${summary.count} record" +
+                                    if (summary.count == 1) "" else "s",
+                            )
+                            append(
+                                " · latest ${latest.date} " +
+                                    "%02d:%02d".format(latest.hour, latest.minute),
+                            )
+                            summary.todayTotal?.let {
+                                append(" · today ${it.formatNeedless()} ${summary.unit}")
+                            }
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }

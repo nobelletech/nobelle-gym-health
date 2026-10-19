@@ -37,9 +37,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
+import com.nobelle.core.data.repository.WorkoutPayload
 import com.nobelle.core.model.ExerciseSet
 import com.nobelle.core.model.GymVisit
 import com.nobelle.core.model.SetType
+import com.nobelle.core.model.WatchWorkoutPayload
 import com.nobelle.core.model.WorkoutState
 import com.nobelle.phone.gym.GymCategoryCatalog
 import com.nobelle.phone.gym.GymVisitInput
@@ -145,6 +147,13 @@ fun TodayScreen(
             onEdit = onEditVisit,
             onDelete = onDeleteVisit,
         )
+
+        if (workout.ownerAvailable) {
+            WorkoutHistoryCard(
+                history = workout.history,
+                watchWorkouts = workout.watchWorkouts,
+            )
+        }
     }
 
     if (confirmDiscard) {
@@ -826,6 +835,8 @@ private fun ExerciseSet.describe(): String {
     rir?.let { parts += "RIR $it" }
     tempo?.let { parts += "tempo $it" }
     if (setType != SetType.STANDARD) parts += setType.label
+    groupId?.let { parts += "group $it" }
+    substitutedForExerciseId?.let { parts += "for $it" }
     if (painFlag) parts += "pain"
     notes?.let { parts += "— $it" }
     return parts.joinToString(" · ")
@@ -888,6 +899,14 @@ private fun GymAttendanceCard(
                         onEdit = { editing = visit },
                         onEnd = { onEnd(visit.id) },
                         onDelete = { deleting = visit },
+                    )
+                }
+                if (gymVisits.visits.size > 5) {
+                    Text(
+                        "…and ${gymVisits.visits.size - 5} earlier visit" +
+                            if (gymVisits.visits.size - 5 == 1) "" else "s",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -1122,3 +1141,176 @@ private fun VisitFormDialog(
         },
     )
 }
+
+/**
+ * Completed sessions — logged on this device or applied from sync — with a
+ * sets drill-down, plus workouts relayed from a paired watch. DISCARDED and
+ * still-active sessions never appear here.
+ */
+@Composable
+private fun WorkoutHistoryCard(
+    history: List<WorkoutPayload>,
+    watchWorkouts: List<WatchWorkoutPayload>,
+) {
+    var detail by remember { mutableStateOf<WorkoutPayload?>(null) }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Workout history", style = MaterialTheme.typography.titleMedium)
+            if (history.isEmpty() && watchWorkouts.isEmpty()) {
+                Text(
+                    "Completed workouts — logged here or synced from another device — appear here.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            history.take(HISTORY_SHOWN).forEach { entry ->
+                SessionHistoryRow(entry = entry, onOpen = { detail = entry })
+            }
+            if (history.size > HISTORY_SHOWN) {
+                Text(
+                    "…and ${history.size - HISTORY_SHOWN} earlier",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (watchWorkouts.isNotEmpty()) {
+                Text("From watch", style = MaterialTheme.typography.labelLarge)
+                watchWorkouts.take(HISTORY_SHOWN).forEach { workout ->
+                    WatchWorkoutRow(workout)
+                }
+                if (watchWorkouts.size > HISTORY_SHOWN) {
+                    Text(
+                        "…and ${watchWorkouts.size - HISTORY_SHOWN} earlier",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+
+    detail?.let { entry ->
+        SessionDetailDialog(entry = entry, onDismiss = { detail = null })
+    }
+}
+
+@Composable
+private fun SessionHistoryRow(entry: WorkoutPayload, onOpen: () -> Unit) {
+    val session = entry.session
+    val zone = session.startTimeZone
+        ?.let { runCatching { TimeZone.of(it) }.getOrNull() }
+        ?: TimeZone.currentSystemDefault()
+    val start = session.startedUtc?.toLocalDateTime(zone)
+    val durationSec = session.startedUtc?.let { started ->
+        session.endedUtc?.let { (it - started).inWholeSeconds }
+    }
+    Column(
+        Modifier.fillMaxWidth()
+            .clickable(onClick = onOpen)
+            .padding(vertical = 4.dp)
+            .semantics { contentDescription = "Workout ${session.category} ${start?.date ?: ""}" },
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Text(
+            "${session.category} · ${start?.date ?: "date unknown"}",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Text(
+            buildString {
+                start?.let { append("%02d:%02d".format(it.hour, it.minute)) }
+                durationSec?.let { append(" · ${formatDuration(it)}") }
+                append(
+                    " · ${entry.sets.size} set" + if (entry.sets.size == 1) "" else "s"
+                )
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun WatchWorkoutRow(workout: WatchWorkoutPayload) {
+    val start = kotlinx.datetime.Instant.fromEpochMilliseconds(workout.startedUtc)
+        .toLocalDateTime(TimeZone.currentSystemDefault())
+    Column(
+        Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Text(
+            "${workout.activity.replaceFirstChar { it.uppercase() }} · ${start.date}",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Text(
+            buildString {
+                append("%02d:%02d".format(start.hour, start.minute))
+                append(" · ${formatDuration(workout.durationSec)}")
+                workout.avgBpm?.let { append(" · avg ${it.toInt()} bpm") }
+                workout.maxBpm?.let { append(" · max ${it.toInt()} bpm") }
+                append(" · watch")
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun SessionDetailDialog(entry: WorkoutPayload, onDismiss: () -> Unit) {
+    val session = entry.session
+    val zone = session.startTimeZone
+        ?.let { runCatching { TimeZone.of(it) }.getOrNull() }
+        ?: TimeZone.currentSystemDefault()
+    val start = session.startedUtc?.toLocalDateTime(zone)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("${session.category} · ${start?.date ?: "date unknown"}") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    buildString {
+                        start?.let {
+                            append("Started %02d:%02d".format(it.hour, it.minute))
+                        }
+                        session.startedUtc?.let { started ->
+                            session.endedUtc?.let {
+                                append(" · ${formatDuration((it - started).inWholeSeconds)}")
+                            }
+                        }
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (entry.sets.isEmpty()) {
+                    Text(
+                        "No sets logged",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    LazyColumn(Modifier.fillMaxWidth().heightIn(max = 320.dp)) {
+                        items(entry.sets.sortedBy { it.setIndex }) { set ->
+                            Text(
+                                set.describe(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(vertical = 4.dp),
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Close") }
+        },
+    )
+}
+
+private fun formatDuration(seconds: Long): String = when {
+    seconds >= 3600 -> "${seconds / 3600}h %02dm".format((seconds % 3600) / 60)
+    seconds >= 60 -> "${seconds / 60}m"
+    else -> "${seconds}s"
+}
+
+private const val HISTORY_SHOWN = 10

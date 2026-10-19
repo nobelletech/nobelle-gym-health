@@ -8,6 +8,7 @@ import com.nobelle.core.model.ExerciseSet
 import com.nobelle.core.model.OwnerId
 import com.nobelle.core.model.SetType
 import com.nobelle.core.model.SyncEvent
+import com.nobelle.core.model.WatchWorkoutPayload
 import com.nobelle.core.model.WorkoutSession
 import com.nobelle.core.model.WorkoutState
 import java.util.UUID
@@ -64,6 +65,34 @@ class WorkoutRepository(
         database.workoutSets().bySession(owner.uid, sessionId)
             .map { decodeSet(it, owner.uid, sessionId) }
             .sortedBy { it.setIndex }
+
+    /**
+     * Completed sessions with their sets, newest first — the history read.
+     * A single corrupt payload row is skipped rather than blanking the list.
+     */
+    suspend fun completedWithSets(owner: OwnerId): List<WorkoutPayload> =
+        database.sessions().list(owner.uid)
+            .mapNotNull { runCatching { decodeSession(it, owner.uid) }.getOrNull() }
+            .filter { it.state == WorkoutState.COMPLETED && it.deletedUtc == null }
+            .map { session -> WorkoutPayload(session, sets(owner, session.id)) }
+
+    /**
+     * Watch-relayed workouts, newest first. Every stored column mirrors a
+     * payload field, so display never decodes the wire JSON.
+     */
+    suspend fun watchWorkouts(owner: OwnerId): List<WatchWorkoutPayload> =
+        database.watchWorkouts().list(owner.uid).map { row ->
+            WatchWorkoutPayload(
+                id = row.id,
+                activity = row.activity,
+                startedUtc = row.startedUtc,
+                endedUtc = row.endedUtc,
+                durationSec = row.durationSec,
+                hrSampleCount = row.hrSampleCount,
+                avgBpm = row.avgBpm,
+                maxBpm = row.maxBpm,
+            )
+        }
 
     suspend fun pause(owner: OwnerId, sessionId: String): WorkoutSession =
         transition(owner, sessionId, setOf(WorkoutState.ACTIVE), WorkoutState.PAUSED)

@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * Health Connect import: availability probing, per-category read permission
@@ -32,6 +34,8 @@ class HealthConnectViewModel(application: Application) : AndroidViewModel(applic
         val loading: Boolean = false,
         val lastImportCounts: Map<HealthConnectCategory, Int>? = null,
         val lastImported: List<HealthObservation> = emptyList(),
+        val storedSummaries: List<MarkerSummary> = emptyList(),
+        val storedCount: Int = 0,
         val message: String? = null,
     )
 
@@ -78,8 +82,27 @@ class HealthConnectViewModel(application: Application) : AndroidViewModel(applic
             selected = if (sameOwner) current.selected else emptySet(),
             lastImportCounts = if (sameOwner) current.lastImportCounts else null,
             lastImported = if (sameOwner) current.lastImported else emptyList(),
+            storedSummaries = if (sameOwner) current.storedSummaries else emptyList(),
+            storedCount = if (sameOwner) current.storedCount else 0,
         )
         refreshPermissions()
+        refreshStored(owner)
+    }
+
+    /** Re-aggregates the stored-record summaries shown on My Health. */
+    private fun refreshStored(owner: OwnerId) {
+        val repo = repository ?: return
+        val generation = selectionGeneration
+        viewModelScope.launch {
+            val stored = runCatching { repo.list(owner) }.getOrDefault(emptyList())
+            if (generation != selectionGeneration || selectedOwner?.uid != owner.uid) return@launch
+            val zone = TimeZone.currentSystemDefault()
+            val today = Clock.System.now().toLocalDateTime(zone).date
+            mutableState.value = mutableState.value.copy(
+                storedSummaries = HealthSummary.summarize(stored, today, zone),
+                storedCount = stored.count { it.deletedUtc == null },
+            )
+        }
     }
 
     fun toggle(category: HealthConnectCategory) {
@@ -198,6 +221,7 @@ class HealthConnectViewModel(application: Application) : AndroidViewModel(applic
                         lastImported = result.observations,
                         message = (deniedNote?.let { "$it " } ?: "") + base,
                     )
+                    refreshStored(owner)
                 },
                 onFailure = { failure ->
                     mutableState.value = mutableState.value.copy(

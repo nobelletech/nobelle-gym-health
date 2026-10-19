@@ -3,10 +3,12 @@ package com.nobelle.phone.workout
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.nobelle.core.data.repository.WorkoutPayload
 import com.nobelle.core.data.repository.WorkoutRepository
 import com.nobelle.core.model.ExerciseSet
 import com.nobelle.core.model.OwnerId
 import com.nobelle.core.model.SetType
+import com.nobelle.core.model.WatchWorkoutPayload
 import com.nobelle.core.model.WorkoutSession
 import com.nobelle.core.model.WorkoutState
 import com.nobelle.phone.NobelleApplication
@@ -28,6 +30,8 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         val loading: Boolean = false,
         val session: WorkoutSession? = null,
         val sets: List<ExerciseSet> = emptyList(),
+        val history: List<WorkoutPayload> = emptyList(),
+        val watchWorkouts: List<WatchWorkoutPayload> = emptyList(),
         val message: String? = null,
     )
 
@@ -74,11 +78,19 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
             val active = runCatching { repo.active(owner) }.getOrNull()
             val sets = active?.let { runCatching { repo.sets(owner, it.id) }.getOrDefault(emptyList()) }
                 ?: emptyList()
+            val history = runCatching { repo.completedWithSets(owner) }
+                .getOrDefault(emptyList())
+                .take(HISTORY_LIMIT)
+            val watch = runCatching { repo.watchWorkouts(owner) }
+                .getOrDefault(emptyList())
+                .take(HISTORY_LIMIT)
             if (generation != selectionGeneration || selectedOwner?.uid != owner.uid) return@launch
             mutableState.value = mutableState.value.copy(
                 ownerAvailable = true,
                 session = active,
                 sets = sets,
+                history = history,
+                watchWorkouts = watch,
             )
         }
     }
@@ -162,17 +174,26 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
             val session = runCatching { repo.active(owner) }.getOrNull()
             val sets = session?.let { runCatching { repo.sets(owner, it.id) }.getOrDefault(emptyList()) }
                 ?: emptyList()
+            val history = runCatching { repo.completedWithSets(owner) }
+                .getOrDefault(emptyList())
+                .take(HISTORY_LIMIT)
+            val watch = runCatching { repo.watchWorkouts(owner) }
+                .getOrDefault(emptyList())
+                .take(HISTORY_LIMIT)
             if (generation != selectionGeneration || selectedOwner?.uid != owner.uid) return@launch
             mutableState.value = mutableState.value.copy(
                 loading = false,
                 session = session,
                 sets = sets,
+                history = history,
+                watchWorkouts = watch,
                 message = message,
             )
         }
     }
 
     private companion object {
+        const val HISTORY_LIMIT = 50
         const val INIT_ERROR = "Nobelle could not open its encrypted local store; your data was left untouched"
     }
 }
