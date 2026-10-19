@@ -14,9 +14,11 @@ class AuthScopesTest {
     }
 
     @Test
-    fun `drive request contains exactly openid and appdata scopes`() {
+    fun `drive request contains openid email and appdata scopes`() {
+        // `email` is required so the grant's ID token carries the email claim
+        // used to mint background-sync tokens for that account.
         assertEquals(
-            listOf("openid", "https://www.googleapis.com/auth/drive.appdata"),
+            listOf("openid", "email", "https://www.googleapis.com/auth/drive.appdata"),
             AuthScopes.DRIVE_SCOPES,
         )
         assertTrue(AuthScopes.requestsDriveScope(AuthScopes.DRIVE_SCOPES.joinToString(" ")))

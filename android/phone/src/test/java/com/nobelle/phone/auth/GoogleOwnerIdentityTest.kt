@@ -3,6 +3,7 @@ package com.nobelle.phone.auth
 import java.util.Base64
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class GoogleOwnerIdentityTest {
@@ -20,6 +21,32 @@ class GoogleOwnerIdentityTest {
 
         assertEquals("https://accounts.google.com:stable-123", owner.uid)
         assertFalse(owner.uid.contains("person@example.com"))
+    }
+
+    @Test
+    fun `grant returns email claim separately from the owner identity`() {
+        val token = token(
+            """{"iss":"https://accounts.google.com","sub":"stable-123","aud":"client-id",""" +
+                """"nonce":"nonce-1","exp":$notExpired,"email":"person@example.com"}"""
+        )
+
+        val grant = GoogleOwnerIdentity.grantFromIdToken(token, "client-id", "nonce-1", now)
+
+        assertEquals("https://accounts.google.com:stable-123", grant.owner.uid)
+        assertEquals("person@example.com", grant.accountEmail)
+        assertFalse(grant.owner.uid.contains(grant.accountEmail!!))
+    }
+
+    @Test
+    fun `grant tolerates a missing email claim`() {
+        val token = token(
+            """{"iss":"accounts.google.com","sub":"stable-123","aud":"client-id","nonce":"nonce-1","exp":$notExpired}"""
+        )
+
+        val grant = GoogleOwnerIdentity.grantFromIdToken(token, "client-id", "nonce-1", now)
+
+        assertEquals("accounts.google.com:stable-123", grant.owner.uid)
+        assertNull(grant.accountEmail)
     }
 
     @Test

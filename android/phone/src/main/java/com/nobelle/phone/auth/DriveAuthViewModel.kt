@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import com.nobelle.core.model.OwnerId
 import com.nobelle.phone.NobelleApplication
 import com.nobelle.phone.sync.OutboxSyncRunner
+import com.nobelle.phone.sync.OutboxSyncScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -67,9 +68,16 @@ class DriveAuthViewModel(application: Application) : AndroidViewModel(applicatio
 
     /**
      * Completes the Drive grant only when the token's owner matches the
-     * currently persisted owner. A mismatch retains no token.
+     * currently persisted owner. A mismatch retains no token. [accountEmail]
+     * is the grant's email claim, persisted encrypted with the consent marker
+     * so background sync can mint tokens for that account — never identity.
      */
-    fun connected(accessToken: String, grantedScopes: Set<String>, owner: OwnerId) {
+    fun connected(
+        accessToken: String,
+        grantedScopes: Set<String>,
+        owner: OwnerId,
+        accountEmail: String?,
+    ) {
         val persisted = mutableOwnerId.value
         if (persisted == null || persisted.uid != owner.uid) {
             token = null
@@ -78,10 +86,19 @@ class DriveAuthViewModel(application: Application) : AndroidViewModel(applicatio
         }
         token = accessToken
         mutableState.value = State.Connected(owner, grantedScopes)
+        // From now on background sync may fetch fresh tokens silently — the
+        // marker records the completed consent and the account email only,
+        // never the token itself.
+        ownerStore.setDriveConsentGranted(true, accountEmail)
+        val app = getApplication() as NobelleApplication
+        OutboxSyncScheduler.ensurePeriodic(app)
         // The foreground onResume drain races the async token exchange and
         // returns early with no token — trigger the drain again now that the
-        // grant actually exists. Application scope so it survives navigation.
-        (getApplication() as NobelleApplication).appScope.launch {
+        // grant actually exists. The expedited worker covers the case where
+        // the app backgrounds before this coroutine runs; the application
+        // scope drain covers the opposite.
+        OutboxSyncScheduler.runOnceNow(app)
+        app.appScope.launch {
             OutboxSyncRunner.drainIfPossible(getApplication(), owner.uid)
         }
     }
@@ -101,16 +118,24 @@ class DriveAuthViewModel(application: Application) : AndroidViewModel(applicatio
         mutableState.value = connected.copy(diagnosticStatus = message, diagnosticRunning = false)
     }
 
-    /** Disconnects Drive only: clears the in-memory token and grant state, never the owner identity. */
+    /**
+     * Disconnects Drive only: clears the in-memory token, the consent marker
+     * and both sync schedules — background sync must not keep silently
+     * refreshing tokens after an explicit disconnect. The owner identity
+     * itself stays.
+     */
     fun disconnect() {
         token = null
+        ownerStore.setDriveConsentGranted(false)
+        OutboxSyncScheduler.cancel(getApplication() as NobelleApplication)
         mutableState.value = State.Disconnected
     }
 
     /** Explicitly forgets the local owner identity; intentionally not wired to Drive Disconnect. */
     fun forgetLocalOwner() {
         token = null
-        ownerStore.clear()
+        ownerStore.clear() // removes the consent marker file too
+        OutboxSyncScheduler.cancel(getApplication() as NobelleApplication)
         mutableOwnerId.value = null
         mutableState.value = State.Disconnected
     }

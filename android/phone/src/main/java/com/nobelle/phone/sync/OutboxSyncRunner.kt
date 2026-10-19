@@ -19,8 +19,9 @@ import kotlinx.coroutines.sync.withLock
  * yet disconnected); without a token events simply stay PENDING — correct,
  * not an error.
  *
- * Triggered after a watch event is relayed into the outbox and once whenever
- * the app returns to the foreground. No scheduler/WorkManager yet.
+ * Triggered after a watch event is relayed into the outbox, whenever the
+ * app returns to the foreground, and in the background by
+ * [OutboxSyncWorker] (which first secures a token via silent refresh).
  */
 object OutboxSyncRunner {
     private val mutex = Mutex()

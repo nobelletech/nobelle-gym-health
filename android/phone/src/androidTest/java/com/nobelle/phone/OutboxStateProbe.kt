@@ -52,6 +52,24 @@ class OutboxStateProbe {
         }
     }
 
+    /**
+     * Background-sync diagnostic: marks the most recent APPLIED row PENDING
+     * so the WorkManager drain has a real event to re-upload. Re-uploading an
+     * already-uploaded operation is harmless — ingest dedupes by
+     * operationUuid on every device, including this one.
+     */
+    @Test
+    fun seedPendingEvent() {
+        val app = InstrumentationRegistry.getInstrumentation()
+            .targetContext.applicationContext as NobelleApplication
+        val updated = app.database.compileStatement(
+            "UPDATE sync_outbox SET state = 'PENDING' WHERE operationUuid = (" +
+                "SELECT operationUuid FROM sync_outbox WHERE state = 'APPLIED' " +
+                "ORDER BY createdUtc DESC LIMIT 1)",
+        ).executeUpdateDelete()
+        Log.i(TAG, "seeded pending events = $updated")
+    }
+
     private companion object {
         const val TAG = "OutboxProbe"
     }

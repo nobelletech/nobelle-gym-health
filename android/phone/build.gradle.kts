@@ -62,6 +62,11 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.play.services.wearable)
+    // GoogleAuthUtil.getToken (silent Drive token refresh for the background
+    // outbox worker) ships inside play-services-auth-base, pulled transitively
+    // here; the GoogleSignIn SDK itself is unused — sign-in is AppAuth.
+    implementation(libs.play.services.auth)
+    implementation(libs.work.runtime)
     implementation(libs.app.auth)
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)

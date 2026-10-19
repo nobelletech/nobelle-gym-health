@@ -3,7 +3,9 @@ package com.nobelle.phone
 import android.app.Application
 import androidx.room.Room
 import com.nobelle.core.data.NobelleDatabase
+import com.nobelle.phone.auth.EncryptedOwnerStore
 import com.nobelle.phone.data.EncryptedDatabasePassphraseStore
+import com.nobelle.phone.sync.OutboxSyncScheduler
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
@@ -13,6 +15,18 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 
 class NobelleApplication : Application() {
     private val passphraseStore by lazy { EncryptedDatabasePassphraseStore(this) }
+
+    override fun onCreate() {
+        super.onCreate()
+        // Background outbox sync is armed only after the user once completed
+        // the Drive consent screen — the marker is read without touching any
+        // token. Without it nothing is scheduled and sync stays a
+        // foreground-only path.
+        if (EncryptedOwnerStore(this).isDriveConsentGranted()) {
+            OutboxSyncScheduler.ensurePeriodic(this)
+            OutboxSyncScheduler.runOnceNow(this)
+        }
+    }
 
     /**
      * Application-scoped work (e.g. the outbox drain) that must outlive any

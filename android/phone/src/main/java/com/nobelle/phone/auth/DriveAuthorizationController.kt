@@ -4,7 +4,6 @@ import android.net.Uri
 import android.util.Base64
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
-import com.nobelle.core.model.OwnerId
 import com.nobelle.phone.BuildConfig
 import java.security.SecureRandom
 import net.openid.appauth.AuthorizationException
@@ -69,8 +68,8 @@ class DriveAuthorizationController(
                 model.error("Google did not return an identity token for the signed-in account")
                 return@performTokenRequest
             }
-            val owner = parseOwner(idToken, response) ?: return@performTokenRequest
-            if (!model.establishIdentity(owner)) return@performTokenRequest
+            val grant = parseGrant(idToken, response) ?: return@performTokenRequest
+            if (!model.establishIdentity(grant.owner)) return@performTokenRequest
             // The second consent screen must be launched from the UI thread.
             activity.runOnUiThread { authorizeDrive() }
         }
@@ -88,28 +87,34 @@ class DriveAuthorizationController(
                 model.error("Google did not return an identity token for the Drive authorization")
                 return@performTokenRequest
             }
-            val owner = parseOwner(idToken, response) ?: return@performTokenRequest
+            val grant = parseGrant(idToken, response) ?: return@performTokenRequest
             val expectedOwner = model.ownerId.value
             if (expectedOwner == null) {
                 model.error("No Google identity is established on this device; Drive was not connected")
                 return@performTokenRequest
             }
-            if (owner.uid != expectedOwner.uid) {
+            if (grant.owner.uid != expectedOwner.uid) {
                 model.error("Drive was authorized for a different Google account; no token was retained")
                 return@performTokenRequest
             }
-            model.connected(accessToken, setOf(AuthScopes.DRIVE_APPDATA_SCOPE), owner)
+            // The grant's email claim is persisted with the consent marker so
+            // background sync can mint fresh tokens for that same account;
+            // it never becomes part of the owner identity.
+            model.connected(accessToken, setOf(AuthScopes.DRIVE_APPDATA_SCOPE), grant.owner, grant.accountEmail)
         }
     }
 
-    private fun parseOwner(idToken: String, response: AuthorizationResponse): OwnerId? {
+    private fun parseGrant(
+        idToken: String,
+        response: AuthorizationResponse,
+    ): GoogleOwnerIdentity.DriveGrant? {
         val expectedNonce = response.request.nonce
         if (expectedNonce.isNullOrBlank()) {
             model.error("The authorization request was missing its identity nonce")
             return null
         }
         return try {
-            GoogleOwnerIdentity.fromIdToken(
+            GoogleOwnerIdentity.grantFromIdToken(
                 idToken = idToken,
                 expectedAudience = BuildConfig.GOOGLE_ANDROID_CLIENT_ID,
                 expectedNonce = expectedNonce,

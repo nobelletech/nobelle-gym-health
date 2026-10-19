@@ -8,10 +8,14 @@ package com.nobelle.phone.auth
  */
 object AuthScopes {
     const val OPENID_SCOPE = "openid"
+    const val EMAIL_SCOPE = "email"
     const val DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata"
 
     val IDENTITY_SCOPES = listOf(OPENID_SCOPE)
-    val DRIVE_SCOPES = listOf(OPENID_SCOPE, DRIVE_APPDATA_SCOPE)
+    // `email` is requested so the grant's ID token carries the email claim —
+    // needed only to build the local Account for silent Drive token refresh;
+    // it is never used as identity.
+    val DRIVE_SCOPES = listOf(OPENID_SCOPE, EMAIL_SCOPE, DRIVE_APPDATA_SCOPE)
 
     fun requestsDriveScope(scope: String?): Boolean =
         scope?.split(' ')?.contains(DRIVE_APPDATA_SCOPE) == true
