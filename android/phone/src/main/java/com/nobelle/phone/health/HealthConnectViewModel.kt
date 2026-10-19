@@ -36,6 +36,9 @@ class HealthConnectViewModel(application: Application) : AndroidViewModel(applic
         val lastImported: List<HealthObservation> = emptyList(),
         val storedSummaries: List<MarkerSummary> = emptyList(),
         val storedCount: Int = 0,
+        /** Raw stored records — the Progress tab aggregates these for
+         *  multi-day totals (e.g. steps per week). */
+        val storedObservations: List<HealthObservation> = emptyList(),
         val message: String? = null,
     )
 
@@ -84,6 +87,7 @@ class HealthConnectViewModel(application: Application) : AndroidViewModel(applic
             lastImported = if (sameOwner) current.lastImported else emptyList(),
             storedSummaries = if (sameOwner) current.storedSummaries else emptyList(),
             storedCount = if (sameOwner) current.storedCount else 0,
+            storedObservations = if (sameOwner) current.storedObservations else emptyList(),
         )
         refreshPermissions()
         refreshStored(owner)
@@ -101,6 +105,7 @@ class HealthConnectViewModel(application: Application) : AndroidViewModel(applic
             mutableState.value = mutableState.value.copy(
                 storedSummaries = HealthSummary.summarize(stored, today, zone),
                 storedCount = stored.count { it.deletedUtc == null },
+                storedObservations = stored,
             )
         }
     }

@@ -24,8 +24,9 @@ data class MarkerSummary(
 
 object HealthSummary {
     /** Markers whose records describe an additive quantity over a window —
-     *  summing same-day records yields a meaningful daily total. */
-    private val CUMULATIVE_MARKERS = setOf("steps")
+     *  summing same-day records yields a meaningful daily total. Shared with
+     *  ProgressSummary so both aggregations treat the same markers as sums. */
+    internal val CUMULATIVE_MARKERS = setOf("steps")
 
     fun summarize(
         observations: List<HealthObservation>,

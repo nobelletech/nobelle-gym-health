@@ -86,6 +86,7 @@ fun NobelleApp(
     onRefreshHealthAccess: () -> Unit,
     showHealthRationale: Boolean,
     onDismissHealthRationale: () -> Unit,
+    onProgressRefresh: () -> Unit,
 ) {
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
@@ -157,7 +158,15 @@ fun NobelleApp(
                     onDismissHealthRationale = onDismissHealthRationale,
                 )
             }
-            composable(Destination.PROGRESS.route) { ProgressScreen() }
+            composable(Destination.PROGRESS.route) {
+                ProgressScreen(
+                    workout = workout,
+                    gymVisits = gymVisits,
+                    fasting = fasting,
+                    healthConnect = healthConnect,
+                    onRefresh = onProgressRefresh,
+                )
+            }
             composable(Destination.PROFILE.route) {
                 ProfileScreen(
                     driveStatus = driveStatus,

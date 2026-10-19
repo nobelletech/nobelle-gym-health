@@ -116,6 +116,15 @@ class MainActivity : ComponentActivity() {
                     onRefreshHealthAccess = healthConnectModel::refreshPermissions,
                     showHealthRationale = showHealthRationale,
                     onDismissHealthRationale = { healthRationaleRequested.value = false },
+                    // Re-running each ViewModel's owner-selection path is the
+                    // existing reload: same owner keeps state, stores re-read.
+                    onProgressRefresh = {
+                        val owner = driveAuthModel.ownerId.value
+                        workoutModel.selectOwner(owner)
+                        gymVisitModel.selectOwner(owner)
+                        fastingModel.selectOwner(owner)
+                        healthConnectModel.selectOwner(owner)
+                    },
                 )
             }
         }

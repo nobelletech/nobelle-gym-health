@@ -166,8 +166,7 @@ class FastingViewModel(application: Application) : AndroidViewModel(application)
             schedule = schedules.getEnabled(owner),
             active = active,
             history = sessions.list(owner)
-                .filter { it.status != FastingSession.Status.ACTIVE }
-                .take(25),
+                .filter { it.status != FastingSession.Status.ACTIVE },
         )
     }
 

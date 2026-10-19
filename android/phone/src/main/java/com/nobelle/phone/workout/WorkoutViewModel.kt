@@ -30,6 +30,8 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         val loading: Boolean = false,
         val session: WorkoutSession? = null,
         val sets: List<ExerciseSet> = emptyList(),
+        /** All completed sessions with sets — the Progress tab aggregates
+         *  these for week counts and personal bests. */
         val history: List<WorkoutPayload> = emptyList(),
         val watchWorkouts: List<WatchWorkoutPayload> = emptyList(),
         val message: String? = null,
@@ -80,10 +82,8 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
                 ?: emptyList()
             val history = runCatching { repo.completedWithSets(owner) }
                 .getOrDefault(emptyList())
-                .take(HISTORY_LIMIT)
             val watch = runCatching { repo.watchWorkouts(owner) }
                 .getOrDefault(emptyList())
-                .take(HISTORY_LIMIT)
             if (generation != selectionGeneration || selectedOwner?.uid != owner.uid) return@launch
             mutableState.value = mutableState.value.copy(
                 ownerAvailable = true,
@@ -176,10 +176,8 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
                 ?: emptyList()
             val history = runCatching { repo.completedWithSets(owner) }
                 .getOrDefault(emptyList())
-                .take(HISTORY_LIMIT)
             val watch = runCatching { repo.watchWorkouts(owner) }
                 .getOrDefault(emptyList())
-                .take(HISTORY_LIMIT)
             if (generation != selectionGeneration || selectedOwner?.uid != owner.uid) return@launch
             mutableState.value = mutableState.value.copy(
                 loading = false,
@@ -193,7 +191,6 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private companion object {
-        const val HISTORY_LIMIT = 50
         const val INIT_ERROR = "Nobelle could not open its encrypted local store; your data was left untouched"
     }
 }
