@@ -2,12 +2,24 @@ import { useState } from "react";
 import { currentAccessToken, disconnectDrive, requestDriveAccess } from "../google/auth";
 import { runDriveDiagnostic } from "../google/diagnostic";
 import { AppDataDriveClient } from "../google/drive";
+import { formatInstant } from "../sync/format";
+import { resetRestoreState, restoreFromDrive } from "../sync/restore";
+import {
+  beginRestore,
+  clearSnapshot,
+  failRestore,
+  finishRestore,
+  reportRestoreProgress,
+  useSnapshot,
+} from "../sync/store";
 
 export default function Connections() {
   const [status, setStatus] = useState("Not connected");
   const [connected, setConnected] = useState(false);
   const [busy, setBusy] = useState(false);
   const [diagnostic, setDiagnostic] = useState<string>();
+  const sync = useSnapshot();
+  const restoring = sync.status === "running";
 
   async function connect() {
     setBusy(true);
@@ -28,6 +40,8 @@ export default function Connections() {
     await disconnectDrive();
     setConnected(false);
     setDiagnostic(undefined);
+    clearSnapshot();
+    resetRestoreState();
     setStatus("Disconnected. Existing Drive data was not deleted.");
     setBusy(false);
   }
@@ -51,6 +65,25 @@ export default function Connections() {
     }
   }
 
+  async function restore() {
+    const token = currentAccessToken();
+    if (!token) {
+      setConnected(false);
+      setStatus("Authorization is no longer in memory. Connect Google Drive again.");
+      return;
+    }
+    beginRestore();
+    try {
+      const snapshot = await restoreFromDrive(new AppDataDriveClient(token), reportRestoreProgress);
+      finishRestore(snapshot);
+    } catch (error) {
+      failRestore(error instanceof Error ? error.message : "Restore failed");
+    }
+  }
+
+  const snapshot = sync.snapshot;
+  const progressText = `Scanned ${sync.progress.filesScanned} files, fetched ${sync.progress.filesFetched}, applied ${sync.progress.applied} events, skipped ${sync.progress.skipped}`;
+
   return (
     <>
       <h1>Connections &amp; Data</h1>
@@ -66,16 +99,37 @@ export default function Connections() {
             {busy ? "Please wait…" : connected ? "Disconnect" : "Connect Google Drive"}
           </button>{" "}
           {connected && (
-            <button className="secondary" disabled={busy} onClick={testDrive}>
-              Test upload and deletion
-            </button>
+            <>
+              <button className="secondary" disabled={busy} onClick={testDrive}>
+                Test upload and deletion
+              </button>{" "}
+              <button className="secondary" disabled={busy || restoring} onClick={restore}>
+                {restoring ? "Restoring…" : "Restore from Drive"}
+              </button>
+            </>
           )}
         </p>
         {diagnostic && <p role="status">{diagnostic}</p>}
       </div>
       <div className="card">
         <h2>Sync status</h2>
-        <p>Last successful sync: —. Pending records: —.</p>
+        {restoring && <p role="status">{progressText}</p>}
+        {sync.status === "error" && <p role="alert">Restore failed: {sync.error}</p>}
+        {snapshot ? (
+          <p>
+            Last restore {formatInstant(snapshot.restoredUtc)} — {progressText}. Restored{" "}
+            {snapshot.workouts.size} workouts, {snapshot.watchWorkouts.size} watch workouts,{" "}
+            {snapshot.gymVisits.size} gym visits, {snapshot.fastingSessions.size} fasting sessions,{" "}
+            {snapshot.fastingSchedules.size} fasting schedules,{" "}
+            {snapshot.healthObservations.size} health observations.
+            {snapshot.ownerNamespace ? ` Owner: ${snapshot.ownerNamespace}.` : ""}
+          </p>
+        ) : (
+          !restoring && sync.status !== "error" && <p>Last successful sync: —. Pending records: —.</p>
+        )}
+        <p>
+          Snapshot is in memory only — reconnect + restore after reload.
+        </p>
       </div>
       <div className="card">
         <h2>Sources</h2>

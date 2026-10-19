@@ -15,3 +15,4 @@ web/dist/
 web/.env.local
 web/.env.*.local
 .DS_Store
+web/vite-dev.log
