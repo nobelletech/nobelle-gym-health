@@ -420,7 +420,7 @@ private fun ExercisePickerDialog(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
-                    LazyColumn(Modifier.fillMaxWidth().heightIn(max = 360.dp)) {
+                    LazyColumn(Modifier.fillMaxWidth().heightIn(max = 320.dp)) {
                         items(results) { preset ->
                             Column(
                                 Modifier.fillMaxWidth()
@@ -438,13 +438,13 @@ private fun ExercisePickerDialog(
                         }
                     }
                 }
-                TextButton(onClick = onManual, modifier = Modifier.align(Alignment.End)) {
-                    Text("Enter manually")
-                }
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+        dismissButton = {
+            TextButton(onClick = onManual) { Text("Enter manually") }
         },
     )
 }
@@ -614,7 +614,7 @@ private fun GymCategoryPickerDialog(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
-                    LazyColumn(Modifier.fillMaxWidth().heightIn(max = 360.dp)) {
+                    LazyColumn(Modifier.fillMaxWidth().heightIn(max = 320.dp)) {
                         items(results) { name ->
                             Text(
                                 name,
@@ -627,13 +627,13 @@ private fun GymCategoryPickerDialog(
                         }
                     }
                 }
-                TextButton(onClick = onManual, modifier = Modifier.align(Alignment.End)) {
-                    Text("Enter manually")
-                }
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+        dismissButton = {
+            TextButton(onClick = onManual) { Text("Enter manually") }
         },
     )
 }
