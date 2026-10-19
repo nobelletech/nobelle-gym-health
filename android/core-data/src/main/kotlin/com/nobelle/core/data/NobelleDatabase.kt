@@ -15,10 +15,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         FastingSessionEntity::class,
         FastingScheduleEntity::class,
         HealthObservationEntity::class,
+        WatchWorkoutEntity::class,
         SyncOutboxEntity::class,
         TombstoneEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class NobelleDatabase : RoomDatabase() {
@@ -29,6 +30,7 @@ abstract class NobelleDatabase : RoomDatabase() {
     abstract fun fastingSessions(): FastingSessionDao
     abstract fun fastingSchedules(): FastingScheduleDao
     abstract fun healthObservations(): HealthObservationDao
+    abstract fun watchWorkouts(): WatchWorkoutDao
     abstract fun tombstones(): TombstoneDao
 
     companion object {
@@ -129,6 +131,25 @@ abstract class NobelleDatabase : RoomDatabase() {
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS `index_fasting_schedules_ownerUID_enabled` " +
                         "ON `fasting_schedules` (`ownerUID`, `enabled`)"
+                )
+            }
+        }
+
+        /** v3 -> v4: durable store for workouts relayed from a paired watch.
+         *  Pure additive table+index. */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `watch_workouts` (" +
+                        "`ownerUID` TEXT NOT NULL, `id` TEXT NOT NULL, `activity` TEXT NOT NULL, " +
+                        "`startedUtc` INTEGER NOT NULL, `endedUtc` INTEGER NOT NULL, " +
+                        "`durationSec` INTEGER NOT NULL, `hrSampleCount` INTEGER NOT NULL, " +
+                        "`avgBpm` REAL, `maxBpm` REAL, `payloadJson` TEXT NOT NULL, " +
+                        "`revision` INTEGER NOT NULL, PRIMARY KEY(`ownerUID`, `id`))"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_watch_workouts_ownerUID_startedUtc` " +
+                        "ON `watch_workouts` (`ownerUID`, `startedUtc`)"
                 )
             }
         }

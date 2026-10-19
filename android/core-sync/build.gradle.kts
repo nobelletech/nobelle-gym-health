@@ -20,6 +20,8 @@ dependencies {
     api(project(":android:core-model"))
     api(project(":drive-sync"))
     implementation(project(":android:core-data"))
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
     implementation(libs.work.runtime)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)

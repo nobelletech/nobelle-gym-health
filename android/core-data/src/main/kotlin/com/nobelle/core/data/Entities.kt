@@ -102,6 +102,30 @@ data class HealthObservationEntity(
     val deletedUtc: Long?,
 )
 
+/**
+ * Workouts relayed from a paired watch. The watch sends no deletes and no
+ * payload fields beyond the summary below; payloadJson keeps the canonical
+ * wire JSON so nothing the watch reported is lost.
+ */
+@Entity(
+    tableName = "watch_workouts",
+    primaryKeys = ["ownerUID", "id"],
+    indices = [Index(value = ["ownerUID", "startedUtc"])],
+)
+data class WatchWorkoutEntity(
+    val ownerUID: String,
+    val id: String,
+    val activity: String,
+    val startedUtc: Long,
+    val endedUtc: Long,
+    val durationSec: Long,
+    val hrSampleCount: Int,
+    val avgBpm: Double?,
+    val maxBpm: Double?,
+    val payloadJson: String,
+    val revision: Long,
+)
+
 @Entity(
     tableName = "sync_outbox",
     indices = [Index(value = ["ownerUID", "state", "createdUtc"])],

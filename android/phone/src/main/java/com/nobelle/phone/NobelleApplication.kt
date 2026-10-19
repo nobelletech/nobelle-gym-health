@@ -43,7 +43,11 @@ class NobelleApplication : Application() {
         val databasePassphrase = passphraseStore.getOrCreate(getDatabasePath(DB_NAME).exists())
         Room.databaseBuilder(this, NobelleDatabase::class.java, DB_NAME)
             .openHelperFactory(SupportOpenHelperFactory(databasePassphrase))
-            .addMigrations(NobelleDatabase.MIGRATION_1_2, NobelleDatabase.MIGRATION_2_3)
+            .addMigrations(
+                NobelleDatabase.MIGRATION_1_2,
+                NobelleDatabase.MIGRATION_2_3,
+                NobelleDatabase.MIGRATION_3_4,
+            )
             .build()
     }
 

@@ -2,6 +2,7 @@ package com.nobelle.core.sync
 
 import com.nobelle.core.model.SyncEvent
 import com.nobelle.drive.DriveStore
+import com.nobelle.drive.EventFileNaming
 
 /**
  * Client-side sync engine (§13/§24). Uploads immutable SyncEvent chunks to the
@@ -12,6 +13,7 @@ class SyncEngine(
     private val drive: DriveStore,
     private val outbox: OutboxWriter,
     private val applier: RemoteApplier,
+    private val accountNamespace: String? = null,
 ) {
     interface OutboxWriter {
         suspend fun pending(limit: Int): List<SyncEvent>
@@ -43,11 +45,21 @@ class SyncEngine(
         return uploaded
     }
 
-    /** Pull remote event files, deduping retries by operation UUID (§24). */
+    /**
+     * Pull remote event files, deduping retries by operation UUID (§24).
+     * The filename already carries the operation UUID, so a previously
+     * applied op is skipped without downloading its body; a malformed or
+     * foreign-namespace file never aborts the page.
+     */
     suspend fun download(cursor: String? = null): String? {
         val page = drive.listEvents(cursor)
         for (file in page.files) {
-            val event = drive.getEvent(file.id) ?: continue
+            val namedUuid = EventFileNaming.operationUuidFrom(file.name)
+            if (namedUuid != null && applier.seenOperation(namedUuid)) continue
+            val event = runCatching { drive.getEvent(file.id) }.getOrNull() ?: continue
+            // appDataFolder is already per-account; the namespace check is
+            // defense-in-depth so a stray file can never write foreign rows.
+            if (accountNamespace != null && event.accountNamespace != accountNamespace) continue
             if (!applier.seenOperation(event.operationUuid)) {
                 applier.apply(event)
             }

@@ -37,6 +37,12 @@ class OutboxStateProbe {
             if (cursor.moveToNext()) Log.i(TAG, "max attempts = ${cursor.getLong(0)}")
         }
         app.database.query(
+            "SELECT COUNT(*) FROM watch_workouts",
+            null,
+        ).use { cursor ->
+            if (cursor.moveToNext()) Log.i(TAG, "watch workouts applied = ${cursor.getLong(0)}")
+        }
+        app.database.query(
             "SELECT DISTINCT lastError FROM sync_outbox WHERE lastError IS NOT NULL LIMIT 5",
             null,
         ).use { cursor ->

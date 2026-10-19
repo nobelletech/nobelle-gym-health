@@ -21,6 +21,9 @@ interface SessionDao {
 
     @Query("SELECT * FROM workout_sessions WHERE ownerUID = :ownerUID ORDER BY startedUtc DESC")
     suspend fun list(ownerUID: String): List<WorkoutSessionEntity>
+
+    @Query("DELETE FROM workout_sessions WHERE ownerUID = :ownerUID AND id = :id")
+    suspend fun hardDelete(ownerUID: String, id: String)
 }
 
 @Dao
@@ -30,6 +33,9 @@ interface WorkoutSetDao {
 
     @Query("SELECT * FROM workout_sets WHERE ownerUID = :ownerUID AND sessionId = :sessionId")
     suspend fun bySession(ownerUID: String, sessionId: String): List<WorkoutSetEntity>
+
+    @Query("DELETE FROM workout_sets WHERE ownerUID = :ownerUID AND sessionId = :sessionId")
+    suspend fun deleteBySession(ownerUID: String, sessionId: String)
 }
 
 @Dao
@@ -40,8 +46,20 @@ interface OutboxDao {
     @Query("SELECT * FROM sync_outbox WHERE ownerUID = :ownerUID AND state = 'PENDING' ORDER BY createdUtc LIMIT :limit")
     suspend fun pending(ownerUID: String, limit: Int = 100): List<SyncOutboxEntity>
 
+    @Query("SELECT * FROM sync_outbox WHERE ownerUID = :ownerUID AND operationUuid = :operationUuid")
+    suspend fun byUuid(ownerUID: String, operationUuid: String): SyncOutboxEntity?
+
+    /** True once the op has been domain-integrated — the download dedupe check. */
+    @Query("SELECT EXISTS(SELECT 1 FROM sync_outbox WHERE ownerUID = :ownerUID AND operationUuid = :operationUuid AND state = 'APPLIED')")
+    suspend fun appliedExists(ownerUID: String, operationUuid: String): Boolean
+
     @Query("UPDATE sync_outbox SET state = :state, attempts = attempts + 1, lastError = :error WHERE ownerUID = :ownerUID AND operationUuid = :id")
     suspend fun markState(ownerUID: String, id: String, state: String, error: String? = null): Int
+
+    /** APPLIED records the download dedupe marker; it is not an upload retry,
+     *  so unlike markState it must not bump attempts or lastError. */
+    @Query("UPDATE sync_outbox SET state = 'APPLIED' WHERE ownerUID = :ownerUID AND operationUuid = :operationUuid")
+    suspend fun markApplied(ownerUID: String, operationUuid: String): Int
 }
 
 @Dao
@@ -78,6 +96,9 @@ interface FastingSessionDao {
 
     @Query("SELECT * FROM fasting_sessions WHERE ownerUID = :ownerUID AND deletedUtc IS NULL ORDER BY actualStartInstant DESC")
     suspend fun list(ownerUID: String): List<FastingSessionEntity>
+
+    @Query("DELETE FROM fasting_sessions WHERE ownerUID = :ownerUID AND id = :id")
+    suspend fun hardDelete(ownerUID: String, id: String)
 }
 
 @Dao
@@ -93,6 +114,9 @@ interface FastingScheduleDao {
 
     @Query("SELECT * FROM fasting_schedules WHERE ownerUID = :ownerUID")
     suspend fun list(ownerUID: String): List<FastingScheduleEntity>
+
+    @Query("DELETE FROM fasting_schedules WHERE ownerUID = :ownerUID AND id = :id")
+    suspend fun hardDelete(ownerUID: String, id: String)
 }
 
 @Dao
@@ -105,6 +129,24 @@ interface HealthObservationDao {
 
     @Query("SELECT * FROM health_observations WHERE ownerUID = :ownerUID AND deletedUtc IS NULL ORDER BY measuredUtc DESC")
     suspend fun list(ownerUID: String): List<HealthObservationEntity>
+
+    @Query("DELETE FROM health_observations WHERE ownerUID = :ownerUID AND id = :id")
+    suspend fun hardDelete(ownerUID: String, id: String)
+}
+
+@Dao
+interface WatchWorkoutDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(w: WatchWorkoutEntity)
+
+    @Query("SELECT * FROM watch_workouts WHERE ownerUID = :ownerUID AND id = :id")
+    suspend fun byId(ownerUID: String, id: String): WatchWorkoutEntity?
+
+    @Query("SELECT * FROM watch_workouts WHERE ownerUID = :ownerUID ORDER BY startedUtc DESC")
+    suspend fun list(ownerUID: String): List<WatchWorkoutEntity>
+
+    @Query("DELETE FROM watch_workouts WHERE ownerUID = :ownerUID AND id = :id")
+    suspend fun hardDelete(ownerUID: String, id: String)
 }
 
 @Dao

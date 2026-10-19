@@ -1,9 +1,9 @@
 package com.nobelle.phone.sync
 
 import android.content.Context
-import com.nobelle.core.model.SyncEvent
 import com.nobelle.core.sync.AndroidDriveStore
 import com.nobelle.core.sync.OutboxDaoWriter
+import com.nobelle.core.sync.RemoteEventApplier
 import com.nobelle.core.sync.SyncEngine
 import com.nobelle.phone.NobelleApplication
 import com.nobelle.phone.auth.DriveTokenHolder
@@ -12,9 +12,12 @@ import kotlinx.coroutines.sync.withLock
 
 /**
  * Drains the phone's encrypted outbox to the owner's Drive appDataFolder via
- * [SyncEngine.upload]. Runs only when a Drive access token is currently held
- * in memory (grant given this session and not yet disconnected); without a
- * token events simply stay PENDING — correct, not an error.
+ * [SyncEngine.upload], then pulls remote event files down through
+ * [SyncEngine.download] so changes made on other devices (or this device's
+ * own pre-reinstall history) are applied locally. Runs only when a Drive
+ * access token is currently held in memory (grant given this session and not
+ * yet disconnected); without a token events simply stay PENDING — correct,
+ * not an error.
  *
  * Triggered after a watch event is relayed into the outbox and once whenever
  * the app returns to the foreground. No scheduler/WorkManager yet.
@@ -36,7 +39,8 @@ object OutboxSyncRunner {
                     },
                 ),
                 outbox = OutboxDaoWriter(app.database.outbox(), ownerUid),
-                applier = NoOpApplier,
+                applier = RemoteEventApplier(app.database, ownerUid),
+                accountNamespace = ownerUid,
             )
             // Drain in batches: one foreground pass should empty a backlog
             // (e.g. a bulk Health Connect import), not just its first page.
@@ -50,13 +54,13 @@ object OutboxSyncRunner {
             ) {
                 // Batch drained successfully; loop re-checks pending.
             }
+            // Download every page: the cursor only tracks position, and a
+            // partial pass is still correct — remaining files apply next run.
+            var cursor: String? = null
+            do {
+                cursor = engine.download(cursor)
+            } while (cursor != null)
         }
-    }
-
-    /** Download/apply of remote events is not implemented on the phone yet. */
-    private object NoOpApplier : SyncEngine.RemoteApplier {
-        override suspend fun seenOperation(operationUuid: String): Boolean = true
-        override suspend fun apply(event: SyncEvent) = Unit
     }
 
     private const val MAX_BATCHES = 60

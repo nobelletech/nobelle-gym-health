@@ -28,6 +28,19 @@ interface DriveStore {
 object EventFileNaming {
     fun nameFor(event: SyncEvent): String =
         "ev_${event.installationId}_${event.utc.toEpochMilliseconds()}_${event.operationUuid}.json"
+
+    /**
+     * Recovers the operation UUID embedded by [nameFor] so a download pass can
+     * dedupe already-applied operations without fetching the file body.
+     * Returns null for anything outside the `ev_*_<uuid>.json` shape.
+     */
+    fun operationUuidFrom(name: String): String? {
+        if (!name.startsWith("ev_") || !name.endsWith(".json")) return null
+        val lastUnderscore = name.lastIndexOf('_')
+        if (lastUnderscore <= 2) return null
+        return name.substring(lastUnderscore + 1, name.length - ".json".length)
+            .takeIf { it.isNotEmpty() }
+    }
 }
 
 object EventCodec {

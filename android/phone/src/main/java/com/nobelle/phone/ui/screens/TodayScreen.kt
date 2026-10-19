@@ -126,7 +126,7 @@ fun TodayScreen(
                     } else {
                         "${watchEnroll.outboxPending}"
                     }) + ". " +
-                    "Applying remote changes onto this device is not implemented yet."
+                    "Remote changes download and apply to this device while Drive is connected."
             } else {
                 "Workouts are stored encrypted on this device. Connect your Google identity " +
                     "in Profile to enable Drive upload."

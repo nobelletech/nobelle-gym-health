@@ -152,6 +152,58 @@ class MigrationTest {
         db.close()
     }
 
+    @Test
+    fun migrate3To4CreatesWatchWorkoutsAndPreservesRows() {
+        helper.createDatabase(TEST_DB, 3).apply {
+            execSQL(
+                "INSERT INTO workout_sessions (ownerUID, id, state, startedUtc, endedUtc, sequence, payloadJson, revision) " +
+                    "VALUES ('owner-a', 's1', 'COMPLETED', 1700000000000, 1700003600000, 4, '{\"id\":\"s1\"}', 3)"
+            )
+            execSQL(
+                "INSERT INTO fasting_schedules (ownerUID, id, enabled, payloadJson, revision) " +
+                    "VALUES ('owner-a', 'sched-1', 1, '{\"id\":\"sched-1\"}', 1)"
+            )
+            execSQL(
+                "INSERT INTO sync_outbox (operationUuid, ownerUID, entityId, entityType, state, attempts, lastError, createdUtc, payloadJson) " +
+                    "VALUES ('op-1', 'owner-a', 'v1', 'gym_visit', 'UPLOADED', 2, NULL, 1700000000000, '{}')"
+            )
+            close()
+        }
+
+        // Validates the migrated DB byte-for-byte against Room's exported v4 schema.
+        val db = helper.runMigrationsAndValidate(TEST_DB, 4, true, NobelleDatabase.MIGRATION_3_4)
+
+        db.query("SELECT ownerUID, state FROM workout_sessions WHERE id = 's1'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("owner-a", cursor.getString(0))
+            assertEquals("COMPLETED", cursor.getString(1))
+        }
+        db.query("SELECT enabled FROM fasting_schedules WHERE id = 'sched-1'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(1, cursor.getInt(0))
+        }
+        db.query("SELECT state, attempts FROM sync_outbox WHERE operationUuid = 'op-1'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("UPLOADED", cursor.getString(0))
+            assertEquals(2, cursor.getInt(1))
+        }
+
+        // The new table is writable and owner-composite-keyed.
+        db.execSQL(
+            "INSERT INTO watch_workouts (ownerUID, id, activity, startedUtc, endedUtc, durationSec, hrSampleCount, avgBpm, maxBpm, payloadJson, revision) " +
+                "VALUES ('owner-a', 'w1', 'run', 1700000000000, 1700003600000, 3600, 10, 140.0, 170.0, '{}', 1)"
+        )
+        db.execSQL(
+            "INSERT INTO watch_workouts (ownerUID, id, activity, startedUtc, endedUtc, durationSec, hrSampleCount, avgBpm, maxBpm, payloadJson, revision) " +
+                "VALUES ('owner-b', 'w1', 'walk', 1700000000000, 1700001800000, 1800, 0, NULL, NULL, '{}', 1)"
+        )
+        db.query("SELECT COUNT(*) FROM watch_workouts WHERE id = 'w1'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(2, cursor.getInt(0))
+        }
+        db.close()
+    }
+
     private companion object {
         const val TEST_DB = "migration-test"
     }
