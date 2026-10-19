@@ -5,7 +5,9 @@ import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.WeightRecord
 import androidx.health.connect.client.records.metadata.Metadata
+import androidx.health.connect.client.records.OxygenSaturationRecord
 import androidx.health.connect.client.units.Mass
+import androidx.health.connect.client.units.Percentage
 import com.nobelle.core.model.HealthObservation
 import com.nobelle.core.model.MarkerGroup
 import com.nobelle.core.model.OwnerId
@@ -69,6 +71,23 @@ class HealthConnectMapperTest {
         assertEquals(420.0, mapped.value, 0.00001)
         assertEquals("min", mapped.unit)
         assertEquals(Instant.parse("2026-03-08T13:30:00Z"), mapped.measuredUtc)
+        assertEquals(-14_400, mapped.timeZoneOffsetSec)
+    }
+
+    @Test
+    fun `blood oxygen maps percentage and cardiorespiratory group`() {
+        val record = OxygenSaturationRecord(
+            time = java.time.Instant.parse("2026-10-18T15:30:00Z"),
+            zoneOffset = ZoneOffset.ofHours(-4),
+            percentage = Percentage(97.5),
+            metadata = metadata,
+        )
+        val mapped = HealthConnectMapper.oxygenSaturation(owner, record, importedAt)
+        assertEquals(97.5, mapped.value, 0.0)
+        assertEquals("%", mapped.unit)
+        assertEquals("oxygen_saturation", mapped.marker)
+        assertEquals(MarkerGroup.CARDIORESPIRATORY, mapped.group)
+        assertEquals(Instant.parse("2026-10-18T15:30:00Z"), mapped.measuredUtc)
         assertEquals(-14_400, mapped.timeZoneOffsetSec)
     }
 

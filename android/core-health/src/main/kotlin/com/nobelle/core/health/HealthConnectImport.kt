@@ -2,6 +2,7 @@ package com.nobelle.core.health
 
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.records.OxygenSaturationRecord
 import androidx.health.connect.client.records.RestingHeartRateRecord
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.StepsRecord
@@ -32,6 +33,10 @@ enum class HealthConnectCategory(
     ),
     WEIGHT("Weight", HealthPermission.getReadPermission(WeightRecord::class)),
     SLEEP("Sleep", HealthPermission.getReadPermission(SleepSessionRecord::class)),
+    OXYGEN_SATURATION(
+        "Blood oxygen (SpO2)",
+        HealthPermission.getReadPermission(OxygenSaturationRecord::class),
+    ),
 }
 
 data class HealthConnectImportResult(
@@ -69,6 +74,11 @@ class HealthConnectImporter(
             if (HealthConnectCategory.SLEEP in categories) {
                 readAll(SleepSessionRecord::class, rangeStart, rangeEnd).forEach {
                     add(HealthConnectMapper.sleep(owner, it, importedAt))
+                }
+            }
+            if (HealthConnectCategory.OXYGEN_SATURATION in categories) {
+                readAll(OxygenSaturationRecord::class, rangeStart, rangeEnd).forEach {
+                    add(HealthConnectMapper.oxygenSaturation(owner, it, importedAt))
                 }
             }
         }
@@ -178,6 +188,24 @@ object HealthConnectMapper {
                 "stageCount" to record.stages.size.toString(),
             ),
         )
+
+    fun oxygenSaturation(
+        owner: OwnerId,
+        record: OxygenSaturationRecord,
+        importedAt: Instant,
+    ): HealthObservation = observation(
+        owner = owner,
+        type = "oxygen_saturation",
+        category = HealthConnectCategory.OXYGEN_SATURATION,
+        marker = "oxygen_saturation",
+        group = MarkerGroup.CARDIORESPIRATORY,
+        value = record.percentage.value,
+        unit = "%",
+        measured = record.time,
+        zoneOffsetSec = record.zoneOffset?.totalSeconds,
+        metadata = record.metadata,
+        importedAt = importedAt,
+    )
 
     private fun observation(
         owner: OwnerId,

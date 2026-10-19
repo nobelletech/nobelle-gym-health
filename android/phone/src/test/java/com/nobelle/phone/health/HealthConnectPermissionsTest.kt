@@ -8,7 +8,7 @@ import org.junit.Test
 class HealthConnectPermissionsTest {
 
     @Test
-    fun `granted strings map to our four categories only`() {
+    fun `granted strings map to our five categories only`() {
         val mapped = HealthConnectPermissions.categoriesFor(
             setOf(
                 HealthConnectCategory.STEPS.permission,
@@ -36,8 +36,8 @@ class HealthConnectPermissionsTest {
     @Test
     fun `each category exposes a distinct read permission`() {
         val permissions = HealthConnectCategory.entries.map { it.permission }
-        assertEquals(4, permissions.size)
-        assertEquals(4, permissions.toSet().size)
+        assertEquals(5, permissions.size)
+        assertEquals(5, permissions.toSet().size)
         assertTrue(permissions.all { it.startsWith("android.permission.health.READ_") })
     }
 }
