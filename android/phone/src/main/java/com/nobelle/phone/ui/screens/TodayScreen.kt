@@ -5,6 +5,7 @@ import android.app.TimePickerDialog
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -192,13 +193,30 @@ private fun WorkoutCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = onPauseOrResume, enabled = !workout.loading) {
-                            Text(if (session.state == WorkoutState.ACTIVE) "Pause" else "Resume")
+                        val tightPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                        OutlinedButton(
+                            onClick = onPauseOrResume,
+                            enabled = !workout.loading,
+                            contentPadding = tightPadding,
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text(
+                                if (session.state == WorkoutState.ACTIVE) "Pause" else "Resume",
+                                maxLines = 1,
+                            )
                         }
-                        Button(onClick = onFinish, enabled = !workout.loading) { Text("Finish") }
-                        OutlinedButton(onClick = onRequestDiscard, enabled = !workout.loading) {
-                            Text("Discard")
-                        }
+                        Button(
+                            onClick = onFinish,
+                            enabled = !workout.loading,
+                            contentPadding = tightPadding,
+                            modifier = Modifier.weight(1f),
+                        ) { Text("Finish", maxLines = 1) }
+                        OutlinedButton(
+                            onClick = onRequestDiscard,
+                            enabled = !workout.loading,
+                            contentPadding = tightPadding,
+                            modifier = Modifier.weight(1f),
+                        ) { Text("Discard", maxLines = 1) }
                     }
                 }
             }
@@ -288,11 +306,13 @@ private fun SetEntryCard(enabled: Boolean, onAddSet: (SetEntryInput) -> Unit) {
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 NumberField(reps, { reps = it }, "Reps", Modifier.weight(1f))
-                NumberField(load, { load = it }, "Load kg", Modifier.weight(1f), decimal = true)
-                NumberField(duration, { duration = it }, "Duration s", Modifier.weight(1f))
+                NumberField(load, { load = it }, "Load", Modifier.weight(1f), decimal = true, suffix = "kg")
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                NumberField(rest, { rest = it }, "Rest s", Modifier.weight(1f))
+                NumberField(duration, { duration = it }, "Duration", Modifier.weight(1f), suffix = "s")
+                NumberField(rest, { rest = it }, "Rest", Modifier.weight(1f), suffix = "s")
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 NumberField(rpe, { rpe = it }, "RPE", Modifier.weight(1f), decimal = true)
                 NumberField(rir, { rir = it }, "RIR", Modifier.weight(1f), decimal = true)
             }
@@ -300,14 +320,14 @@ private fun SetEntryCard(enabled: Boolean, onAddSet: (SetEntryInput) -> Unit) {
                 OutlinedTextField(
                     value = tempo,
                     onValueChange = { tempo = it },
-                    label = { Text("Tempo") },
+                    label = { Text("Tempo", maxLines = 1) },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                 )
                 OutlinedTextField(
                     value = groupId,
                     onValueChange = { groupId = it },
-                    label = { Text("Group (superset)") },
+                    label = { Text("Superset", maxLines = 1) },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                 )
@@ -645,11 +665,13 @@ private fun NumberField(
     label: String,
     modifier: Modifier = Modifier,
     decimal: Boolean = false,
+    suffix: String? = null,
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
+        label = { Text(label, maxLines = 1) },
+        suffix = suffix?.let { unit -> { Text(unit) } },
         singleLine = true,
         keyboardOptions = KeyboardOptions(
             keyboardType = if (decimal) KeyboardType.Decimal else KeyboardType.Number
