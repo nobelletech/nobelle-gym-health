@@ -23,7 +23,14 @@ class DriveAuthViewModel(application: Application) : AndroidViewModel(applicatio
     private val ownerStore = EncryptedOwnerStore(application)
     private val mutableState = MutableStateFlow<State>(State.Disconnected)
     private val mutableOwnerId = MutableStateFlow(ownerStore.read())
+
+    /** In-memory only; mirrored into [DriveTokenHolder] so the outbox drain
+     *  and the watch listener can use the current grant without UI access. */
     private var token: String? = null
+        set(value) {
+            field = value
+            DriveTokenHolder.set(value)
+        }
 
     val state: StateFlow<State> = mutableState
     val ownerId: StateFlow<OwnerId?> = mutableOwnerId

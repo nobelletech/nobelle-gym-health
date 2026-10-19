@@ -9,8 +9,12 @@ internal val durableJson = Json { ignoreUnknownKeys = true; encodeDefaults = tru
 
 internal const val SYNC_EVENT_SCHEMA_VERSION = 1
 
-/** Persisted outbox row wraps the serialized immutable SyncEvent. */
-internal fun SyncEvent.toOutboxEntity(createdUtcMillis: Long) = SyncOutboxEntity(
+/**
+ * Persisted outbox row wraps the serialized immutable SyncEvent. Public so
+ * the phone's watch-relay (SyncListenerService) can enqueue verified watch
+ * events through the identical path the repositories use.
+ */
+fun SyncEvent.toOutboxEntity(createdUtcMillis: Long) = SyncOutboxEntity(
     operationUuid = operationUuid,
     ownerUID = accountNamespace,
     entityId = entityId,

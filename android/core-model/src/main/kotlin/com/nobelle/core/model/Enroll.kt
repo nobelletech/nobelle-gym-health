@@ -85,7 +85,9 @@ data class PendingWatchEnrollRequest(
     val receivedUtc: Instant,
 )
 
-/** What the phone persists, owner-scoped, wrapped in AES/GCM. */
+/** What the phone persists, owner-scoped, wrapped in AES/GCM.
+ *  [eventsReceived] counts authenticated sync events relayed into the
+ *  outbox; [lastContactUtc] tracks the last accepted watch message. */
 @Serializable
 data class PhoneWatchEnrollment(
     val watchInstallationId: String,
@@ -93,14 +95,18 @@ data class PhoneWatchEnrollment(
     val tokenBase64: String,
     val enrolledUtc: Instant,
     val lastContactUtc: Instant,
+    val eventsReceived: Int = 0,
 )
 
-/** What the watch persists, wrapped in AES/GCM. */
+/** What the watch persists, wrapped in AES/GCM. [phoneNodeId] remembers the
+ *  Data Layer node that delivered the enrollment response so sync events can
+ *  prefer it when still connected; it is a routing hint, not a secret. */
 @Serializable
 data class WatchPhoneEnrollment(
     val phoneInstallationId: String,
     val tokenBase64: String,
     val enrolledUtc: Instant,
+    val phoneNodeId: String = "",
 )
 
 /** Strict-but-forgiving wire codec: unknown keys ignored for forward compat. */

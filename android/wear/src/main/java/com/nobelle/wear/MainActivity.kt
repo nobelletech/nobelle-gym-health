@@ -22,8 +22,10 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
 /**
- * Wear shell (§7): hardware/runtime capability diagnostic only. There is no
- * workout recording, persistence or phone sync yet — the UI says so.
+ * Wear shell (§7): hardware/runtime capability diagnostics plus timed workout
+ * recording. A recorded workout is HMAC-signed with the enrollment token and
+ * queued to the enrolled phone; it counts as delivered only after the phone
+ * confirms receipt.
  */
 class MainActivity : ComponentActivity() {
     private val model by viewModels<WearViewModel>()
@@ -43,10 +45,16 @@ class MainActivity : ComponentActivity() {
                 val state by model.state.collectAsStateWithLifecycle()
                 val enroll by model.enrollState.collectAsStateWithLifecycle()
                 val enrollMessage by model.enrollMessage.collectAsStateWithLifecycle()
+                val workout by model.workout.collectAsStateWithLifecycle()
                 WearHome(
                     state = state,
                     enroll = enroll,
                     enrollMessage = enrollMessage,
+                    workout = workout,
+                    onStartWorkout = model::startWorkout,
+                    onFinishWorkout = model::finishWorkout,
+                    onDiscardWorkout = model::discardWorkout,
+                    onSyncNow = model::syncNow,
                     onEnroll = model::enrollWatch,
                     onEnrollCancel = model::cancelEnroll,
                     onForgetPhone = model::forgetPhone,
@@ -81,6 +89,11 @@ fun WearHome(
     state: WearViewModel.WearUiState,
     enroll: WatchEnrollState,
     enrollMessage: String?,
+    workout: WearSyncCoordinator.WorkoutUiState,
+    onStartWorkout: () -> Unit,
+    onFinishWorkout: () -> Unit,
+    onDiscardWorkout: () -> Unit,
+    onSyncNow: () -> Unit,
     onEnroll: () -> Unit,
     onEnrollCancel: () -> Unit,
     onForgetPhone: () -> Unit,
@@ -216,17 +229,79 @@ fun WearHome(
         item {
             Button(onClick = onHaptic) { Text("Test haptic") }
         }
-        item {
-            Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth(0.8f)) {
-                Text("Quick start", textAlign = TextAlign.Center)
+
+        // Workout recording + phone sync (§7): only an enrolled watch can
+        // deliver to the phone, so controls exist only while enrolled.
+        if (enroll is WatchEnrollState.Enrolled) {
+            if (workout.active) {
+                item {
+                    Text(
+                        "Workout ${elapsedClock(workout.elapsedMs)}",
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+                item {
+                    Text(
+                        workout.latestBpm?.let { "${it.toInt()} bpm · live" }
+                            ?: if (workout.hrSampleCount > 0) {
+                                "Measuring heart rate…"
+                            } else {
+                                "No heart-rate samples yet"
+                            },
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+                item {
+                    Button(
+                        onClick = onFinishWorkout,
+                        enabled = !workout.busy,
+                        modifier = Modifier.fillMaxWidth(0.8f),
+                    ) { Text("Finish", textAlign = TextAlign.Center) }
+                }
+                item {
+                    Button(
+                        onClick = onDiscardWorkout,
+                        enabled = !workout.busy,
+                        modifier = Modifier.fillMaxWidth(0.8f),
+                    ) { Text("Discard", textAlign = TextAlign.Center) }
+                }
+            } else {
+                item {
+                    Button(
+                        onClick = onStartWorkout,
+                        enabled = !workout.busy,
+                        modifier = Modifier.fillMaxWidth(0.8f),
+                    ) { Text("Start workout", textAlign = TextAlign.Center) }
+                }
             }
-        }
-        item {
-            Text(
-                "Workout recording not implemented yet",
-                style = MaterialTheme.typography.bodySmall,
-                textAlign = TextAlign.Center,
-            )
+            if (workout.queued > 0) {
+                item {
+                    Text(
+                        "${workout.queued} workout(s) queued for phone",
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+            if (workout.queued > 0) {
+                item {
+                    Button(
+                        onClick = onSyncNow,
+                        modifier = Modifier.fillMaxWidth(0.8f),
+                    ) { Text("Sync now", textAlign = TextAlign.Center) }
+                }
+            }
+            workout.message?.let { message ->
+                item {
+                    Text(
+                        message,
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
         }
 
         // Phone enrollment (§7): the 6-digit code is the only thing shown —
@@ -308,4 +383,17 @@ private fun ProbeRow(name: String, status: String) {
         style = MaterialTheme.typography.bodyMedium,
         textAlign = TextAlign.Center,
     )
+}
+
+/** mm:ss ticking clock; grows to h:mm:ss past the hour. */
+private fun elapsedClock(elapsedMs: Long): String {
+    val totalSeconds = elapsedMs / 1_000
+    val hours = totalSeconds / 3_600
+    val minutes = (totalSeconds % 3_600) / 60
+    val seconds = totalSeconds % 60
+    return if (hours > 0) {
+        "%d:%02d:%02d".format(hours, minutes, seconds)
+    } else {
+        "%02d:%02d".format(minutes, seconds)
+    }
 }

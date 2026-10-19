@@ -131,8 +131,10 @@ object WearEnrollmentCoordinator {
         mutableMessage.value = null
     }
 
-    /** Called by the listener service when a RESPONSE message arrives. */
-    internal fun onResponse(context: Context, data: ByteArray) {
+    /** Called by the listener service when a RESPONSE message arrives.
+     *  [sourceNodeId] is remembered in the enrollment record so sync events
+     *  can prefer the phone node that answered. */
+    internal fun onResponse(context: Context, data: ByteArray, sourceNodeId: String) {
         ensureInit(context)
         val response = runCatching { EnrollWire.decodeResponse(data) }.getOrNull()
             ?: return
@@ -171,6 +173,7 @@ object WearEnrollmentCoordinator {
                         phoneInstallationId = response.phoneInstallationId,
                         tokenBase64 = EnrollCrypto.toBase64(token),
                         enrolledUtc = now,
+                        phoneNodeId = sourceNodeId,
                     ),
                 )
                 mutableState.value = WatchEnrollTransitions.responseReceived(

@@ -13,6 +13,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.nobelle.core.sync.AndroidDriveStore
 import com.nobelle.core.sync.DriveRoundTripDiagnostic
+import com.nobelle.phone.sync.OutboxSyncRunner
 import com.nobelle.phone.auth.DriveAuthorizationController
 import com.nobelle.phone.auth.DriveAuthViewModel
 import com.nobelle.phone.fasting.FastingViewModel
@@ -123,6 +124,17 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (isHealthRationaleIntent(intent)) healthRationaleRequested.value = true
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Foreground drain: upload any queued outbox events while a Drive
+        // token is held in memory. No token → they stay PENDING.
+        driveAuthModel.ownerId.value?.uid?.let { uid ->
+            lifecycleScope.launch {
+                OutboxSyncRunner.drainIfPossible(applicationContext, uid)
+            }
+        }
     }
 
     private fun isHealthRationaleIntent(intent: Intent?): Boolean {

@@ -36,12 +36,17 @@ class WatchEnrollViewModel(application: Application) : AndroidViewModel(applicat
         val watchModel: String,
         val enrolledUtc: Instant,
         val lastContactUtc: Instant,
+        val eventsReceived: Int,
     )
 
     data class UiState(
         val ownerAvailable: Boolean = false,
         val pending: PendingUi? = null,
         val enrolled: EnrolledUi? = null,
+        /** PENDING rows in the encrypted outbox awaiting Drive upload. */
+        val outboxPending: Int = 0,
+        /** True when the bounded count hit its cap and the real total is higher. */
+        val outboxPendingCapped: Boolean = false,
         val busy: Boolean = false,
         val message: String? = null,
     )
@@ -83,6 +88,12 @@ class WatchEnrollViewModel(application: Application) : AndroidViewModel(applicat
     private suspend fun reload(uid: String) = withContext(Dispatchers.IO) {
         val enrolled = runCatching { enrollments.read(uid) }.getOrNull()
         val pending = runCatching { pendings.read(uid) }.getOrNull()
+        // Bounded scan; a dedicated count query is unnecessary at this scale.
+        // Hitting the cap is reported honestly instead of reading as exact.
+        val outboxPending = runCatching {
+            app.database.outbox().pending(uid, OUTBOX_COUNT_LIMIT).size
+        }.getOrDefault(0)
+        val outboxPendingCapped = outboxPending >= OUTBOX_COUNT_LIMIT
         mutableState.value = mutableState.value.copy(
             ownerAvailable = true,
             pending = pending?.let {
@@ -95,8 +106,15 @@ class WatchEnrollViewModel(application: Application) : AndroidViewModel(applicat
                 )
             },
             enrolled = enrolled?.let {
-                EnrolledUi(it.watchModel, it.enrolledUtc, it.lastContactUtc)
+                EnrolledUi(
+                    it.watchModel,
+                    it.enrolledUtc,
+                    it.lastContactUtc,
+                    it.eventsReceived,
+                )
             },
+            outboxPending = outboxPending,
+            outboxPendingCapped = outboxPendingCapped,
         )
     }
 
@@ -217,5 +235,6 @@ class WatchEnrollViewModel(application: Application) : AndroidViewModel(applicat
 
     private companion object {
         const val POLL_INTERVAL_MS = 1_500L
+        const val OUTBOX_COUNT_LIMIT = 500
     }
 }

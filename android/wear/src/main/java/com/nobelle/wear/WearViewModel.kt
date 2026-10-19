@@ -24,15 +24,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
- * Wear shell: capability probe + explicit user-triggered live tests.
- * Nothing is recorded, persisted or synced — a shown bpm is a live sample
- * only, and a reachable phone node is not enrollment.
+ * Wear shell: capability probe + explicit user-triggered live tests, plus
+ * workout recording delegated to [WearSyncCoordinator]. Diagnostic samples
+ * are never recorded — a test bpm is a live sample only, and a reachable
+ * phone node is not enrollment.
  */
 class WearViewModel(application: Application) : AndroidViewModel(application) {
     /** Phone enrollment state — delegated to the shared coordinator so the
      * listener service and the UI observe the same session. */
     val enrollState = WearEnrollmentCoordinator.state
     val enrollMessage = WearEnrollmentCoordinator.message
+
+    /** Workout recording + phone-sync state — same shared-coordinator split. */
+    val workout = WearSyncCoordinator.state
 
     data class WearUiState(
         val capabilities: WearCapabilities? = null,
@@ -52,6 +56,7 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         WearEnrollmentCoordinator.attach(application)
+        WearSyncCoordinator.attach(application)
         probe()
     }
 
@@ -65,6 +70,22 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
 
     fun forgetPhone() {
         WearEnrollmentCoordinator.forgetPhone(getApplication())
+    }
+
+    fun startWorkout() {
+        WearSyncCoordinator.startWorkout(getApplication())
+    }
+
+    fun finishWorkout() {
+        WearSyncCoordinator.finishWorkout(getApplication())
+    }
+
+    fun discardWorkout() {
+        WearSyncCoordinator.discardWorkout(getApplication())
+    }
+
+    fun syncNow() {
+        WearSyncCoordinator.syncNow(getApplication())
     }
 
     fun probe() {

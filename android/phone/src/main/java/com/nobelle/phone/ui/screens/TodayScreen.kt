@@ -117,7 +117,20 @@ fun TodayScreen(
 
         InfoCard(
             title = "Sync",
-            body = "Stored encrypted on this device. Completed workouts are queued locally; automatic Drive upload is not implemented yet.",
+            body = if (watchEnroll.ownerAvailable) {
+                "Workouts recorded here or on a paired watch are stored in this device's " +
+                    "encrypted outbox and upload to your Drive app data folder while Drive " +
+                    "is connected. Queued for upload: " +
+                    (if (watchEnroll.outboxPendingCapped) {
+                        "${watchEnroll.outboxPending}+"
+                    } else {
+                        "${watchEnroll.outboxPending}"
+                    }) + ". " +
+                    "Applying remote changes onto this device is not implemented yet."
+            } else {
+                "Workouts are stored encrypted on this device. Connect your Google identity " +
+                    "in Profile to enable Drive upload."
+            },
         )
 
         gymVisits.message?.let { message ->
@@ -290,10 +303,20 @@ private fun WatchEnrollCard(
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Text(
-                        "Data sync over phone is not implemented yet.",
+                        "Workout events received from watch: ${enrolled.eventsReceived}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (enrolled.eventsReceived > 0) {
+                        val last = enrolled.lastContactUtc
+                            .toLocalDateTime(TimeZone.currentSystemDefault())
+                        Text(
+                            "Last watch event: ${last.date} " +
+                                "%02d:%02d".format(last.hour, last.minute),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     OutlinedButton(onClick = onForget, enabled = !watch.busy) {
                         Text("Forget watch")
                     }
