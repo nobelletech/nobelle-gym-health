@@ -38,7 +38,18 @@ object OutboxSyncRunner {
                 outbox = OutboxDaoWriter(app.database.outbox(), ownerUid),
                 applier = NoOpApplier,
             )
-            engine.upload()
+            // Drain in batches: one foreground pass should empty a backlog
+            // (e.g. a bulk Health Connect import), not just its first page.
+            val outbox = app.database.outbox()
+            var batches = 0
+            while (batches++ < MAX_BATCHES &&
+                outbox.pending(ownerUid, 1).isNotEmpty() &&
+                // Zero uploads in a batch means every event failed (expired
+                // token, no network) — retrying the same batch just spins.
+                engine.upload() > 0
+            ) {
+                // Batch drained successfully; loop re-checks pending.
+            }
         }
     }
 
@@ -47,4 +58,6 @@ object OutboxSyncRunner {
         override suspend fun seenOperation(operationUuid: String): Boolean = true
         override suspend fun apply(event: SyncEvent) = Unit
     }
+
+    private const val MAX_BATCHES = 60
 }

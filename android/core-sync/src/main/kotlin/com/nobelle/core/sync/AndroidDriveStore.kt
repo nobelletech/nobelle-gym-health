@@ -88,6 +88,10 @@ class AndroidDriveStore(
     ): ByteArray {
         val connection = connectionFactory(url)
         try {
+            // Default HttpURLConnection timeouts are infinite: a stalled
+            // socket would suspend the outbox drain forever, silently.
+            connection.connectTimeout = 15_000
+            connection.readTimeout = 30_000
             connection.requestMethod = method
             connection.setRequestProperty("Authorization", "Bearer ${accessToken()}")
             connection.setRequestProperty("Accept", "application/json")

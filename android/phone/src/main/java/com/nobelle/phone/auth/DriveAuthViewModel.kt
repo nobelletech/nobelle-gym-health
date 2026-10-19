@@ -3,8 +3,11 @@ package com.nobelle.phone.auth
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import com.nobelle.core.model.OwnerId
+import com.nobelle.phone.NobelleApplication
+import com.nobelle.phone.sync.OutboxSyncRunner
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 class DriveAuthViewModel(application: Application) : AndroidViewModel(application) {
     sealed interface State {
@@ -75,6 +78,12 @@ class DriveAuthViewModel(application: Application) : AndroidViewModel(applicatio
         }
         token = accessToken
         mutableState.value = State.Connected(owner, grantedScopes)
+        // The foreground onResume drain races the async token exchange and
+        // returns early with no token — trigger the drain again now that the
+        // grant actually exists. Application scope so it survives navigation.
+        (getApplication() as NobelleApplication).appScope.launch {
+            OutboxSyncRunner.drainIfPossible(getApplication(), owner.uid)
+        }
     }
 
     fun error(message: String) {

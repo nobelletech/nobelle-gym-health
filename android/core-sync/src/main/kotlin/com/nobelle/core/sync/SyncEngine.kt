@@ -24,16 +24,23 @@ class SyncEngine(
         suspend fun apply(event: SyncEvent)
     }
 
-    /** Drain the local outbox. Successful Drive write is acked separately (§13). */
-    suspend fun upload(limit: Int = 50) {
+    /**
+     * Drain the local outbox. Successful Drive write is acked separately
+     * (§13). Returns how many events were uploaded so callers can stop
+     * when a batch makes no progress (e.g. expired token).
+     */
+    suspend fun upload(limit: Int = 50): Int {
+        var uploaded = 0
         for (event in outbox.pending(limit)) {
             try {
                 drive.putEvent(event)
                 outbox.markUploaded(event.operationUuid)
+                uploaded++
             } catch (e: Exception) {
                 outbox.markFailed(event.operationUuid, e.message ?: "upload failed")
             }
         }
+        return uploaded
     }
 
     /** Pull remote event files, deduping retries by operation UUID (§24). */

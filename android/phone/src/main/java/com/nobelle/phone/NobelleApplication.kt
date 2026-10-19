@@ -6,10 +6,20 @@ import com.nobelle.core.data.NobelleDatabase
 import com.nobelle.phone.data.EncryptedDatabasePassphraseStore
 import java.io.File
 import java.util.UUID
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 
 class NobelleApplication : Application() {
     private val passphraseStore by lazy { EncryptedDatabasePassphraseStore(this) }
+
+    /**
+     * Application-scoped work (e.g. the outbox drain) that must outlive any
+     * single Activity — an activity-scoped drain dies mid-upload if the user
+     * leaves the screen.
+     */
+    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /**
      * Device-local identifier for sync provenance; never contains account or

@@ -80,8 +80,11 @@ class SyncListenerService : WearableListenerService() {
                 ),
             ).awaitTask()
         }
-        // Best-effort Drive drain while a token is held in memory.
-        OutboxSyncRunner.drainIfPossible(this@SyncListenerService, ownerUid)
+        // Best-effort Drive drain while a token is held in memory — on the
+        // application scope so it outlives this service instance.
+        app.appScope.launch {
+            OutboxSyncRunner.drainIfPossible(this@SyncListenerService, ownerUid)
+        }
     }
 
     private fun drop(reason: String) {

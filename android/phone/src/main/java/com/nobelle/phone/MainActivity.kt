@@ -129,9 +129,11 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         // Foreground drain: upload any queued outbox events while a Drive
-        // token is held in memory. No token → they stay PENDING.
+        // token is held in memory. No token → they stay PENDING. Runs on the
+        // application scope — a drain takes minutes with a backlog and must
+        // not die if the user leaves this screen.
         driveAuthModel.ownerId.value?.uid?.let { uid ->
-            lifecycleScope.launch {
+            (application as NobelleApplication).appScope.launch {
                 OutboxSyncRunner.drainIfPossible(applicationContext, uid)
             }
         }
