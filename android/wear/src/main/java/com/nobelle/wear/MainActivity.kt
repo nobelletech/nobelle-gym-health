@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme {
+            WearTheme {
                 val state by model.state.collectAsStateWithLifecycle()
                 WearHome(
                     state = state,
@@ -80,7 +80,13 @@ fun WearHome(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
     ) {
-        item { Text("Nobelle", textAlign = TextAlign.Center) }
+        item {
+            Text(
+                "Nobelle",
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
+            )
+        }
 
         val caps = state.capabilities
         if (caps != null) {

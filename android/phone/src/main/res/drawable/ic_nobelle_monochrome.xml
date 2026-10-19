@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed-icon monochrome layer: single-color heart + dumbbell
+     silhouette; the launcher tints it itself. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54 82 C48 76 27 62 27 44 C27 31 42 25 54 38 C66 25 81 31 81 44 C81 62 60 76 54 82 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M24 41 h5 v23 h-5 Z
+            M29 44 h6 v17 h-6 Z
+            M34 49 h40 v7 h-40 Z
+            M73 44 h6 v17 h-6 Z
+            M79 41 h5 v23 h-5 Z" />
+</vector>

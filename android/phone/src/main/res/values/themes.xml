@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.Nobelle" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowBackground">@android:color/white</item>
-        <item name="android:statusBarColor">@android:color/black</item>
+        <item name="android:windowBackground">@color/nobelle_canvas</item>
+        <item name="android:statusBarColor">@color/nobelle_burgundy</item>
+        <item name="android:navigationBarColor">@color/nobelle_ink</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 
     <style name="Theme.Nobelle.AppAuth" parent="Theme.AppCompat.NoActionBar">

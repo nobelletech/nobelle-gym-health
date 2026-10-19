@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Nobelle mark: cobalt field, burgundy heart (health), white dumbbell
+     spanning it (gym), electric-sky ECG pulse (vitals). Source of truth for
+     the adaptive icon vectors in android/phone and android/wear — all mark
+     geometry stays inside the adaptive safe zone (x24..84 / y25..82). -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="108" height="108">
+  <!-- Preview rounding only; the adaptive-icon background applies the real mask. -->
+  <rect x="0" y="0" width="108" height="108" rx="24" fill="#155EEF"/>
+  <!-- Heart -->
+  <path fill="#941B45"
+        d="M54 82 C48 76 27 62 27 44 C27 31 42 25 54 38 C66 25 81 31 81 44 C81 62 60 76 54 82 Z"/>
+  <!-- Dumbbell -->
+  <g fill="#FFFFFF">
+    <rect x="24" y="41" width="5" height="23" rx="2"/>
+    <rect x="29" y="44" width="6" height="17" rx="2"/>
+    <rect x="34" y="49" width="40" height="7" rx="2"/>
+    <rect x="73" y="44" width="6" height="17" rx="2"/>
+    <rect x="79" y="41" width="5" height="23" rx="2"/>
+  </g>
+  <!-- ECG pulse -->
+  <path fill="none" stroke="#36C5F0" stroke-width="3"
+        stroke-linecap="round" stroke-linejoin="round"
+        d="M34 67 L43 67 L47 60 L52 74 L58 63 L63 67 L73 67"/>
+</svg>

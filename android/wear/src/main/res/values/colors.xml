@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Nobelle brand palette (see docs/brand/nobelle-mark.svg). -->
+    <color name="nobelle_burgundy">#941B45</color>
+    <color name="nobelle_cobalt">#155EEF</color>
+    <color name="nobelle_sky">#36C5F0</color>
+    <color name="nobelle_ink">#17213C</color>
+    <color name="nobelle_canvas">#F6F8FF</color>
+    <color name="nobelle_canvas_dark">#10162A</color>
+
+    <color name="nobelle_icon_background">#155EEF</color>
+</resources>

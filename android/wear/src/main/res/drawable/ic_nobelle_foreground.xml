@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adaptive-icon foreground: burgundy heart + white dumbbell + sky ECG
+     pulse (docs/brand/nobelle-mark.svg). Geometry stays inside the
+     adaptive safe zone; the cobalt background comes from
+     @color/nobelle_icon_background. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#941B45"
+        android:pathData="M54 82 C48 76 27 62 27 44 C27 31 42 25 54 38 C66 25 81 31 81 44 C81 62 60 76 54 82 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24 41 h5 v23 h-5 Z
+            M29 44 h6 v17 h-6 Z
+            M34 49 h40 v7 h-40 Z
+            M73 44 h6 v17 h-6 Z
+            M79 41 h5 v23 h-5 Z" />
+    <path
+        android:strokeColor="#36C5F0"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M34 67 L43 67 L47 60 L52 74 L58 63 L63 67 L73 67" />
+</vector>
