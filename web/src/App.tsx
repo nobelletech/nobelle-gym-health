@@ -2,6 +2,7 @@ import { NavLink, Route, Routes } from "react-router-dom";
 import Today from "./pages/Today";
 import Health from "./pages/Health";
 import Progress from "./pages/Progress";
+import Workouts from "./pages/Workouts";
 import Plans from "./pages/Plans";
 import Connections from "./pages/Connections";
 
@@ -19,6 +20,7 @@ export default function App() {
           <NavLink to="/">Today</NavLink>
           <NavLink to="/plans">Plans</NavLink>
           <NavLink to="/health">My Health</NavLink>
+          <NavLink to="/workouts">Workouts</NavLink>
           <NavLink to="/progress">Progress</NavLink>
           <NavLink to="/connections">Connections</NavLink>
         </nav>
@@ -28,6 +30,7 @@ export default function App() {
           <Route path="/" element={<Today />} />
           <Route path="/plans" element={<Plans />} />
           <Route path="/health" element={<Health />} />
+          <Route path="/workouts" element={<Workouts />} />
           <Route path="/progress" element={<Progress />} />
           <Route path="/connections" element={<Connections />} />
         </Routes>

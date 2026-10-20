@@ -1,4 +1,7 @@
-import { formatDurationSec, formatInstant, formatMeters } from "../sync/format";
+import { Link } from "react-router-dom";
+import { formatDurationSec, formatInstant } from "../sync/format";
+import { attendanceWeeks, durationSeconds, fastingCompletions, localDate } from "../sync/history";
+import HistoryChart from "./HistoryChart";
 import type { OutdoorRoutePoint } from "../sync/model";
 import { useSnapshot } from "../sync/store";
 
@@ -8,7 +11,8 @@ import { useSnapshot } from "../sync/store";
  * by cos(mean latitude) so the shape isn't stretched. No map tiles — this is
  * a shape preview, not a geographic map.
  */
-function RoutePolyline({ points }: { points: OutdoorRoutePoint[] }) {
+export function RoutePolyline({ points }: { points: OutdoorRoutePoint[] }) {
+  points = points.filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lon));
   if (points.length === 0) return null;
   const lats = points.map((p) => p.lat);
   const lons = points.map((p) => p.lon);
@@ -47,62 +51,45 @@ function RoutePolyline({ points }: { points: OutdoorRoutePoint[] }) {
 export default function Progress() {
   const { snapshot } = useSnapshot();
 
-  const totalSets = snapshot
-    ? [...snapshot.workouts.values()].reduce((sum, w) => sum + w.sets.length, 0)
-    : 0;
-  const completedWorkouts = snapshot
-    ? [...snapshot.workouts.values()].filter((w) => w.session.state === "COMPLETED").length
-    : 0;
-  const outdoor = snapshot
-    ? [...snapshot.outdoorSessions.values()].sort(
-        (a, b) => Date.parse(b.startedUtc) - Date.parse(a.startedUtc),
-      )
-    : [];
-
-  return (
-    <>
-      <h1>Progress</h1>
-      <div className="card">
-        <h2>Training totals</h2>
-        {snapshot ? (
-          <p>
-            {completedWorkouts} completed workouts ({snapshot.workouts.size} sessions synced) ·{" "}
-            {totalSets} sets · {snapshot.watchWorkouts.size} watch workouts ·{" "}
-            {snapshot.outdoorSessions.size} outdoor sessions ·{" "}
-            {snapshot.gymVisits.size} gym visits.
-          </p>
-        ) : (
-          <p>Strength, running and attendance charts appear after syncing sessions.</p>
-        )}
-      </div>
-      {snapshot && (
-        <div className="card">
-          <h2>Outdoor sessions</h2>
-          {outdoor.length === 0 ? (
-            <p>No outdoor GPS sessions in the restored snapshot yet.</p>
-          ) : (
-            <ul>
-              {outdoor.slice(0, 10).map((s) => (
-                <li key={s.id}>
-                  <strong>{s.activity}</strong>
-                  <br />
-                  {formatInstant(s.startedUtc)} · {formatMeters(s.distanceMeters)} ·{" "}
-                  {formatDurationSec(s.durationSec)}
-                  <br />
-                  <RoutePolyline points={s.route ?? []} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-      <div className="card">
-        <h2>Reports</h2>
-        <p>
-          Weekly/monthly summaries — descriptive only, not medical interpretation.
-          {snapshot ? ` Snapshot restored ${formatInstant(snapshot.restoredUtc)}.` : ""}
-        </p>
-      </div>
-    </>
-  );
+  const workouts = [...(snapshot?.workouts.values() ?? [])].filter((w) => !w.session.deletedUtc && w.session.state === "COMPLETED");
+  const fasts = [...(snapshot?.fastingSessions.values() ?? [])].filter((s) => !s.deletedUtc)
+    .sort((a, b) => b.actualStartInstant.localeCompare(a.actualStartInstant) || a.id.localeCompare(b.id));
+  const visits = [...(snapshot?.gymVisits.values() ?? [])].filter((v) => !v.deletedUtc)
+    .sort((a, b) => b.localAttendanceDate.localeCompare(a.localAttendanceDate) || a.id.localeCompare(b.id));
+  return <>
+    <h1>Progress</h1>
+    <div className="card">
+      <h2>Training totals</h2>
+      {snapshot ? <p>{workouts.length} completed workouts · {workouts.reduce((sum, w) => sum + w.sets.length, 0)} sets.</p> : <p>No data. Restore from Drive on Connections.</p>}
+      <p><Link to="/workouts">View workout, watch and outdoor history →</Link></p>
+      <p>Weekly charts use ISO Monday–Sunday weeks. Instant-based records use your browser’s local timezone. Missing weeks are blank, not zero.</p>
+    </div>
+    <section className="card">
+      <h2>Fasting history</h2>
+      <p>Completed counts use the recorded end date, including sessions ended early. Status comes from the synced record, not from reaching a target.</p>
+      <HistoryChart points={fastingCompletions(fasts)} label="Completed fasts by week starting" unit="completed fasts / week" bars />
+      {!fasts.length ? <p>No fasting data.</p> : <div className="table-scroll"><table>
+        <thead><tr><th>Started</th><th>Ended</th><th>Status</th><th>Duration</th><th>Target</th></tr></thead>
+        <tbody>{fasts.map((fast) => <tr key={fast.id}>
+          <td>{formatInstant(fast.actualStartInstant)}</td><td>{formatInstant(fast.actualEndInstant)}</td>
+          <td>{fast.status}{fast.endedEarly ? " · ended early" : ""}</td>
+          <td>{formatDurationSec(durationSeconds(fast.actualStartInstant, fast.actualEndInstant))}
+            {fast.status === "ACTIVE" && !fast.actualEndInstant && snapshot && <small>Elapsed at restore: {formatDurationSec(durationSeconds(fast.actualStartInstant, snapshot.restoredUtc))}</small>}
+          </td><td>{formatDurationSec(fast.targetDurationSec)}</td>
+        </tr>)}</tbody>
+      </table></div>}
+    </section>
+    <section className="card">
+      <h2>Gym attendance</h2>
+      <p>Counts are distinct attendance days per week, matching the phone’s Progress summary. Multiple visits on one day count once. Recorded localAttendanceDate is used without timezone conversion.</p>
+      <HistoryChart points={attendanceWeeks(visits)} label="Gym attendance by week starting" unit="attendance days / week" bars />
+      {!visits.length ? <p>No gym attendance data.</p> : <div className="table-scroll"><table>
+        <thead><tr><th>Attendance date</th><th>Gym</th><th>Started</th><th>Duration</th></tr></thead>
+        <tbody>{visits.map((visit) => <tr key={visit.id}><td>{visit.localAttendanceDate || "—"}</td><td>{visit.gymLabel ?? "—"}</td>
+          <td>{formatInstant(visit.startInstant)}</td><td>{formatDurationSec(durationSeconds(visit.startInstant, visit.endInstant))}</td></tr>)}</tbody>
+      </table></div>}
+    </section>
+    <p>Snapshot restored {formatInstant(snapshot?.restoredUtc)}. Memory-only; no live updates from your phone.
+      {snapshot && ` Snapshot date: ${localDate(snapshot.restoredUtc)}.`}</p>
+  </>;
 }
