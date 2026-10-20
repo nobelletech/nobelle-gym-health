@@ -29,6 +29,11 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - name: Build web dashboard
         working-directory: web
+        env:
+          # OAuth client IDs are public identifiers (visible in every
+          # consent URL), not secrets — kept as a repo variable so it can
+          # rotate without a code change.
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
         run: |
           npm ci
           npm run build
