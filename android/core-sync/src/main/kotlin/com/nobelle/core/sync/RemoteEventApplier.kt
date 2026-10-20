@@ -11,6 +11,8 @@ import com.nobelle.core.data.HealthObservationDao
 import com.nobelle.core.data.HealthObservationEntity
 import com.nobelle.core.data.NobelleDatabase
 import com.nobelle.core.data.OutboxDao
+import com.nobelle.core.data.OutdoorSessionDao
+import com.nobelle.core.data.OutdoorSessionEntity
 import com.nobelle.core.data.SessionDao
 import com.nobelle.core.data.TombstoneDao
 import com.nobelle.core.data.TombstoneEntity
@@ -23,6 +25,7 @@ import com.nobelle.core.data.repository.FastingScheduleRepository
 import com.nobelle.core.data.repository.FastingSessionRepository
 import com.nobelle.core.data.repository.GymVisitRepository
 import com.nobelle.core.data.repository.HealthObservationRepository
+import com.nobelle.core.data.repository.OutdoorSessionRepository
 import com.nobelle.core.data.repository.WorkoutPayload
 import com.nobelle.core.data.repository.WorkoutRepository
 import com.nobelle.core.data.repository.toOutboxEntity
@@ -31,6 +34,7 @@ import com.nobelle.core.model.FastingSchedule
 import com.nobelle.core.model.FastingSession
 import com.nobelle.core.model.GymVisit
 import com.nobelle.core.model.HealthObservation
+import com.nobelle.core.model.OutdoorSession
 import com.nobelle.core.model.SyncEvent
 import com.nobelle.core.model.SyncPaths
 import com.nobelle.core.model.WatchSyncCodec
@@ -53,6 +57,7 @@ interface RemoteApplyStore {
     fun fastingSchedules(): FastingScheduleDao
     fun healthObservations(): HealthObservationDao
     fun watchWorkouts(): WatchWorkoutDao
+    fun outdoorSessions(): OutdoorSessionDao
     fun tombstones(): TombstoneDao
     suspend fun <T> inTransaction(block: suspend () -> T): T
 }
@@ -218,6 +223,32 @@ class RemoteEventApplier(
                     )
                 )
             }
+            OutdoorSessionRepository.ENTITY_TYPE -> {
+                val session = json.decodeFromString(OutdoorSession.serializer(), event.payloadJson)
+                if (session.id != event.entityId || session.ownerUID != ownerUid) return false
+                // Last-writer-wins by revision: a staler event arriving after
+                // a newer row must not regress the session, but still counts
+                // as applied.
+                val existing = store.outdoorSessions().byId(ownerUid, session.id)
+                if (existing != null && existing.revision > session.revision) return true
+                store.outdoorSessions().upsert(
+                    OutdoorSessionEntity(
+                        ownerUID = ownerUid,
+                        id = session.id,
+                        activity = session.activity,
+                        startedUtc = session.startedUtc.toEpochMilliseconds(),
+                        endedUtc = session.endedUtc.toEpochMilliseconds(),
+                        durationSec = session.durationSec,
+                        distanceMeters = session.distanceMeters,
+                        pointCount = session.pointCount,
+                        payloadJson = json.encodeToString(OutdoorSession.serializer(), session),
+                        revision = session.revision,
+                        createdUtc = session.createdUtc.toEpochMilliseconds(),
+                        updatedUtc = session.updatedUtc?.toEpochMilliseconds(),
+                        deletedUtc = session.deletedUtc?.toEpochMilliseconds(),
+                    )
+                )
+            }
             SyncPaths.ENTITY_TYPE_WATCH_WORKOUT -> {
                 val payload = WatchSyncCodec.decodeWorkoutPayload(event.payloadJson)
                 if (payload.id != event.entityId) return false
@@ -251,6 +282,7 @@ class RemoteEventApplier(
             FastingSessionRepository.ENTITY_TYPE,
             FastingScheduleRepository.ENTITY_TYPE,
             HealthObservationRepository.ENTITY_TYPE,
+            OutdoorSessionRepository.ENTITY_TYPE,
             SyncPaths.ENTITY_TYPE_WATCH_WORKOUT -> true
             else -> false
         }
@@ -277,6 +309,8 @@ class RemoteEventApplier(
                 store.fastingSchedules().hardDelete(ownerUid, event.entityId)
             HealthObservationRepository.ENTITY_TYPE ->
                 store.healthObservations().hardDelete(ownerUid, event.entityId)
+            OutdoorSessionRepository.ENTITY_TYPE ->
+                store.outdoorSessions().hardDelete(ownerUid, event.entityId)
             SyncPaths.ENTITY_TYPE_WATCH_WORKOUT ->
                 store.watchWorkouts().hardDelete(ownerUid, event.entityId)
         }
@@ -299,6 +333,7 @@ private class RoomRemoteApplyStore(private val database: NobelleDatabase) : Remo
     override fun fastingSchedules() = database.fastingSchedules()
     override fun healthObservations() = database.healthObservations()
     override fun watchWorkouts() = database.watchWorkouts()
+    override fun outdoorSessions() = database.outdoorSessions()
     override fun tombstones() = database.tombstones()
     override suspend fun <T> inTransaction(block: suspend () -> T): T =
         database.withTransaction(block)

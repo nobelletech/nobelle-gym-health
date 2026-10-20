@@ -16,10 +16,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         FastingScheduleEntity::class,
         HealthObservationEntity::class,
         WatchWorkoutEntity::class,
+        OutdoorSessionEntity::class,
         SyncOutboxEntity::class,
         TombstoneEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 abstract class NobelleDatabase : RoomDatabase() {
@@ -31,6 +32,7 @@ abstract class NobelleDatabase : RoomDatabase() {
     abstract fun fastingSchedules(): FastingScheduleDao
     abstract fun healthObservations(): HealthObservationDao
     abstract fun watchWorkouts(): WatchWorkoutDao
+    abstract fun outdoorSessions(): OutdoorSessionDao
     abstract fun tombstones(): TombstoneDao
 
     companion object {
@@ -150,6 +152,27 @@ abstract class NobelleDatabase : RoomDatabase() {
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS `index_watch_workouts_ownerUID_startedUtc` " +
                         "ON `watch_workouts` (`ownerUID`, `startedUtc`)"
+                )
+            }
+        }
+
+        /** v4 -> v5: durable store for phone-recorded outdoor GPS sessions.
+         *  Pure additive table+index. */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `outdoor_sessions` (" +
+                        "`ownerUID` TEXT NOT NULL, `id` TEXT NOT NULL, `activity` TEXT NOT NULL, " +
+                        "`startedUtc` INTEGER NOT NULL, `endedUtc` INTEGER NOT NULL, " +
+                        "`durationSec` INTEGER NOT NULL, `distanceMeters` REAL NOT NULL, " +
+                        "`pointCount` INTEGER NOT NULL, `payloadJson` TEXT NOT NULL, " +
+                        "`revision` INTEGER NOT NULL, `createdUtc` INTEGER NOT NULL, " +
+                        "`updatedUtc` INTEGER, `deletedUtc` INTEGER, " +
+                        "PRIMARY KEY(`ownerUID`, `id`))"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_outdoor_sessions_ownerUID_startedUtc` " +
+                        "ON `outdoor_sessions` (`ownerUID`, `startedUtc`)"
                 )
             }
         }

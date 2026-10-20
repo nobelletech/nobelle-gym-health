@@ -265,4 +265,41 @@ describe("restoreFromDrive", () => {
     expect(workout?.avgBpm).toBe(140.5);
     expect(workout?.maxBpm).toBe(171);
   });
+
+  it("lands outdoor sessions with their route payload", async () => {
+    const payload = {
+      id: "o1",
+      ownerUID: OWNER,
+      activity: "run",
+      startedUtc: "2024-01-01T10:00:00Z",
+      endedUtc: "2024-01-01T10:30:00Z",
+      durationSec: 1800,
+      distanceMeters: 4210.5,
+      route: [
+        { lat: 43.6532, lon: -79.3832, epochMs: 1_704_110_400_000, accuracyM: 4.5 },
+        { lat: 43.654, lon: -79.384, epochMs: 1_704_110_402_000 },
+      ],
+      pointCount: 2,
+      createdUtc: "2024-01-01T10:30:00Z",
+      revision: 1,
+    };
+    const entry = eventFile(
+      syncEvent({
+        entityId: "o1",
+        entityType: "outdoor_session",
+        operationUuid: "op-o1",
+        payloadJson: JSON.stringify(payload),
+      }),
+    );
+    const { client } = fakeDrive([{ files: [entry.file] }], new Map([[entry.file.id, entry.body]]));
+
+    const snapshot = await restoreFromDrive(client);
+    const session = snapshot.outdoorSessions.get("o1");
+
+    expect(snapshot.applied).toBe(1);
+    expect(session?.activity).toBe("run");
+    expect(session?.distanceMeters).toBe(4210.5);
+    expect(session?.route?.length).toBe(2);
+    expect(session?.pointCount).toBe(2);
+  });
 });

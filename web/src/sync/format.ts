@@ -20,3 +20,9 @@ export function formatDurationSec(sec: number | null | undefined): string {
   if (minutes > 0) return `${minutes}m`;
   return `${Math.round(sec)}s`;
 }
+
+export function formatMeters(meters: number | null | undefined): string {
+  if (meters == null || !Number.isFinite(meters) || meters < 0) return "—";
+  if (meters >= 1000) return `${(meters / 1000).toFixed(2)} km`;
+  return `${Math.round(meters)} m`;
+}

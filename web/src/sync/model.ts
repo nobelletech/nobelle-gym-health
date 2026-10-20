@@ -12,6 +12,7 @@ export const ENTITY_TYPES = {
   FASTING_SCHEDULE: "fasting_schedule",
   HEALTH_OBSERVATION: "health_observation",
   WATCH_WORKOUT: "watch_workout",
+  OUTDOOR_SESSION: "outdoor_session",
 } as const;
 
 export type EntityType = (typeof ENTITY_TYPES)[keyof typeof ENTITY_TYPES];
@@ -191,6 +192,36 @@ export interface WatchWorkoutPayload {
   hrSampleCount?: number;
   avgBpm?: number | null;
   maxBpm?: number | null;
+  [key: string]: unknown;
+}
+
+/**
+ * outdoor_session payloadJson shape. startedUtc/endedUtc/createdUtc are ISO
+ * instants; route points carry epoch milliseconds. Route points use the
+ * compact shape {lat, lon, epochMs, accuracyM?}.
+ */
+export interface OutdoorRoutePoint {
+  lat: number;
+  lon: number;
+  epochMs: number;
+  accuracyM?: number | null;
+  [key: string]: unknown;
+}
+
+export interface OutdoorSession {
+  id: string;
+  ownerUID: string;
+  activity: string; // walk | run | cycle
+  startedUtc: string;
+  endedUtc: string;
+  durationSec: number;
+  distanceMeters: number;
+  route?: OutdoorRoutePoint[];
+  pointCount?: number;
+  createdUtc: string;
+  updatedUtc?: string | null;
+  deletedUtc?: string | null;
+  revision?: number;
   [key: string]: unknown;
 }
 

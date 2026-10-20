@@ -1,4 +1,4 @@
-import { formatDurationSec, formatInstant } from "../sync/format";
+import { formatDurationSec, formatInstant, formatMeters } from "../sync/format";
 import { useSnapshot } from "../sync/store";
 
 type ActivityItem = {
@@ -62,6 +62,17 @@ export default function Today() {
         (bpm ? ` · ${bpm}` : ""),
     });
   }
+  for (const outdoor of snapshot.outdoorSessions.values()) {
+    const ts = Date.parse(outdoor.startedUtc);
+    items.push({
+      key: `outdoor:${outdoor.id}`,
+      ts: Number.isFinite(ts) ? ts : 0,
+      label: `Outdoor — ${outdoor.activity}`,
+      detail:
+        `${formatInstant(outdoor.startedUtc)} · ${formatMeters(outdoor.distanceMeters)} · ` +
+        `${formatDurationSec(outdoor.durationSec)} · ${outdoor.pointCount ?? 0} GPS points`,
+    });
+  }
   for (const visit of snapshot.gymVisits.values()) {
     const ts = Date.parse(visit.startInstant);
     items.push({
@@ -81,6 +92,7 @@ export default function Today() {
         <h2>Synced data</h2>
         <p>
           {snapshot.workouts.size} workouts · {snapshot.watchWorkouts.size} watch workouts ·{" "}
+          {snapshot.outdoorSessions.size} outdoor sessions ·{" "}
           {snapshot.gymVisits.size} gym visits · {snapshot.fastingSessions.size} fasts ·{" "}
           {snapshot.healthObservations.size} health observations — restored{" "}
           {formatInstant(snapshot.restoredUtc)}. Snapshot lives in memory only.

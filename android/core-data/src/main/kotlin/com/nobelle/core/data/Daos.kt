@@ -150,6 +150,21 @@ interface WatchWorkoutDao {
 }
 
 @Dao
+interface OutdoorSessionDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(s: OutdoorSessionEntity)
+
+    @Query("SELECT * FROM outdoor_sessions WHERE ownerUID = :ownerUID AND id = :id")
+    suspend fun byId(ownerUID: String, id: String): OutdoorSessionEntity?
+
+    @Query("SELECT * FROM outdoor_sessions WHERE ownerUID = :ownerUID AND deletedUtc IS NULL ORDER BY startedUtc DESC")
+    suspend fun list(ownerUID: String): List<OutdoorSessionEntity>
+
+    @Query("DELETE FROM outdoor_sessions WHERE ownerUID = :ownerUID AND id = :id")
+    suspend fun hardDelete(ownerUID: String, id: String)
+}
+
+@Dao
 interface TombstoneDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(t: TombstoneEntity)

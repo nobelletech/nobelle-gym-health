@@ -126,6 +126,32 @@ data class WatchWorkoutEntity(
     val revision: Long,
 )
 
+/**
+ * Outdoor GPS sessions recorded on the phone (Coach "Outdoor"). Route points
+ * live inside payloadJson; the columns keep the display summary so lists
+ * never decode the wire JSON.
+ */
+@Entity(
+    tableName = "outdoor_sessions",
+    primaryKeys = ["ownerUID", "id"],
+    indices = [Index(value = ["ownerUID", "startedUtc"])],
+)
+data class OutdoorSessionEntity(
+    val ownerUID: String,
+    val id: String,
+    val activity: String,
+    val startedUtc: Long,
+    val endedUtc: Long,
+    val durationSec: Long,
+    val distanceMeters: Double,
+    val pointCount: Int,
+    val payloadJson: String,
+    val revision: Long,
+    val createdUtc: Long,
+    val updatedUtc: Long?,
+    val deletedUtc: Long?,
+)
+
 @Entity(
     tableName = "sync_outbox",
     indices = [Index(value = ["ownerUID", "state", "createdUtc"])],

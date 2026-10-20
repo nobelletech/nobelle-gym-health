@@ -10,6 +10,7 @@ import type {
   FastingSession,
   GymVisit,
   HealthObservation,
+  OutdoorSession,
   SyncEvent,
   WatchWorkoutPayload,
   WorkoutSessionPayload,
@@ -46,6 +47,7 @@ export interface RestoreProgress {
 export interface DashboardSnapshot {
   workouts: Map<string, WorkoutSessionPayload>;
   watchWorkouts: Map<string, WatchWorkoutPayload>;
+  outdoorSessions: Map<string, OutdoorSession>;
   gymVisits: Map<string, GymVisit>;
   fastingSessions: Map<string, FastingSession>;
   fastingSchedules: Map<string, FastingSchedule>;
@@ -120,7 +122,8 @@ function decodePayload(event: SyncEvent): DecodedPayload {
     case ENTITY_TYPES.FASTING_SESSION:
     case ENTITY_TYPES.FASTING_SCHEDULE:
     case ENTITY_TYPES.HEALTH_OBSERVATION:
-    case ENTITY_TYPES.WATCH_WORKOUT: {
+    case ENTITY_TYPES.WATCH_WORKOUT:
+    case ENTITY_TYPES.OUTDOOR_SESSION: {
       const entity = parsed as { id?: unknown };
       if (entity.id !== event.entityId) return { ok: false };
       return { ok: true, value: parsed };
@@ -179,6 +182,7 @@ function buildSnapshot(counters: RestoreProgress): DashboardSnapshot {
   const snapshot: DashboardSnapshot = {
     workouts: new Map(),
     watchWorkouts: new Map(),
+    outdoorSessions: new Map(),
     gymVisits: new Map(),
     fastingSessions: new Map(),
     fastingSchedules: new Map(),
@@ -197,6 +201,9 @@ function buildSnapshot(counters: RestoreProgress): DashboardSnapshot {
         break;
       case ENTITY_TYPES.WATCH_WORKOUT:
         snapshot.watchWorkouts.set(record.entityId, record.value as WatchWorkoutPayload);
+        break;
+      case ENTITY_TYPES.OUTDOOR_SESSION:
+        snapshot.outdoorSessions.set(record.entityId, record.value as OutdoorSession);
         break;
       case ENTITY_TYPES.GYM_VISIT:
         snapshot.gymVisits.set(record.entityId, record.value as GymVisit);

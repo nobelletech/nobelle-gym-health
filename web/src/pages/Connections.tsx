@@ -119,6 +119,7 @@ export default function Connections() {
           <p>
             Last restore {formatInstant(snapshot.restoredUtc)} — {progressText}. Restored{" "}
             {snapshot.workouts.size} workouts, {snapshot.watchWorkouts.size} watch workouts,{" "}
+            {snapshot.outdoorSessions.size} outdoor sessions,{" "}
             {snapshot.gymVisits.size} gym visits, {snapshot.fastingSessions.size} fasting sessions,{" "}
             {snapshot.fastingSchedules.size} fasting schedules,{" "}
             {snapshot.healthObservations.size} health observations.

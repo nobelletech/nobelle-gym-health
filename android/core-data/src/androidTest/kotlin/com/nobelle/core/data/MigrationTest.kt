@@ -204,6 +204,49 @@ class MigrationTest {
         db.close()
     }
 
+    @Test
+    fun migrate4To5CreatesOutdoorSessionsAndPreservesRows() {
+        helper.createDatabase(TEST_DB, 4).apply {
+            execSQL(
+                "INSERT INTO watch_workouts (ownerUID, id, activity, startedUtc, endedUtc, durationSec, hrSampleCount, avgBpm, maxBpm, payloadJson, revision) " +
+                    "VALUES ('owner-a', 'w1', 'run', 1700000000000, 1700003600000, 3600, 10, 140.0, 170.0, '{}', 1)"
+            )
+            execSQL(
+                "INSERT INTO sync_outbox (operationUuid, ownerUID, entityId, entityType, state, attempts, lastError, createdUtc, payloadJson) " +
+                    "VALUES ('op-1', 'owner-a', 'w1', 'watch_workout', 'PENDING', 0, NULL, 1700000000000, '{}')"
+            )
+            close()
+        }
+
+        // Validates the migrated DB byte-for-byte against Room's exported v5 schema.
+        val db = helper.runMigrationsAndValidate(TEST_DB, 5, true, NobelleDatabase.MIGRATION_4_5)
+
+        db.query("SELECT ownerUID, activity FROM watch_workouts WHERE id = 'w1'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("owner-a", cursor.getString(0))
+            assertEquals("run", cursor.getString(1))
+        }
+        db.query("SELECT state FROM sync_outbox WHERE operationUuid = 'op-1'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("PENDING", cursor.getString(0))
+        }
+
+        // The new table is writable and owner-composite-keyed.
+        db.execSQL(
+            "INSERT INTO outdoor_sessions (ownerUID, id, activity, startedUtc, endedUtc, durationSec, distanceMeters, pointCount, payloadJson, revision, createdUtc, updatedUtc, deletedUtc) " +
+                "VALUES ('owner-a', 'o1', 'walk', 1700000000000, 1700001800000, 1800, 2400.0, 12, '{}', 1, 1700001800000, NULL, NULL)"
+        )
+        db.execSQL(
+            "INSERT INTO outdoor_sessions (ownerUID, id, activity, startedUtc, endedUtc, durationSec, distanceMeters, pointCount, payloadJson, revision, createdUtc, updatedUtc, deletedUtc) " +
+                "VALUES ('owner-b', 'o1', 'cycle', 1700000000000, 1700003600000, 3600, 12000.0, 40, '{}', 1, 1700003600000, NULL, NULL)"
+        )
+        db.query("SELECT COUNT(*) FROM outdoor_sessions WHERE id = 'o1'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(2, cursor.getInt(0))
+        }
+        db.close()
+    }
+
     private companion object {
         const val TEST_DB = "migration-test"
     }

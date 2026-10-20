@@ -9,6 +9,8 @@ import com.nobelle.core.data.GymVisitEntity
 import com.nobelle.core.data.HealthObservationDao
 import com.nobelle.core.data.HealthObservationEntity
 import com.nobelle.core.data.OutboxDao
+import com.nobelle.core.data.OutdoorSessionDao
+import com.nobelle.core.data.OutdoorSessionEntity
 import com.nobelle.core.data.SessionDao
 import com.nobelle.core.data.SyncOutboxEntity
 import com.nobelle.core.data.TombstoneDao
@@ -21,6 +23,7 @@ import com.nobelle.core.data.WorkoutSessionEntity
 import com.nobelle.core.data.repository.WorkoutPayload
 import com.nobelle.core.model.ExerciseSet
 import com.nobelle.core.model.GymVisit
+import com.nobelle.core.model.OutdoorSession
 import com.nobelle.core.model.SyncEvent
 import com.nobelle.core.model.SyncPaths
 import com.nobelle.core.model.WatchSyncCodec
@@ -209,6 +212,52 @@ class RemoteEventApplierTest {
     }
 
     @Test
+    fun `outdoor session upsert lands in outdoor_sessions and honors revision`() = runBlocking {
+        val store = FakeStore()
+        val applier = RemoteEventApplier(store, owner)
+        val session = OutdoorSession(
+            id = "o1", ownerUID = owner, activity = "run",
+            startedUtc = Instant.fromEpochMilliseconds(1_699_999_000_000L),
+            endedUtc = Instant.fromEpochMilliseconds(1_700_000_000_000L),
+            durationSec = 600, distanceMeters = 1_200.0,
+            route = emptyList(), pointCount = 3,
+            createdUtc = Instant.fromEpochMilliseconds(1_700_000_000_000L),
+            revision = 2,
+        )
+        val ev = event(
+            "outdoor_session", "o1",
+            payloadJson = json.encodeToString(OutdoorSession.serializer(), session),
+        )
+
+        applier.apply(ev)
+
+        val row = store.outdoorSessions.byId(owner, "o1")
+        assertNotNull(row)
+        assertEquals("run", row!!.activity)
+        assertEquals(1_200.0, row.distanceMeters, 0.0001)
+        assertEquals(3, row.pointCount)
+        assertTrue(applier.seenOperation(ev.operationUuid))
+
+        // A staler revision must not regress the row but still counts applied.
+        val stale = ev.copy(
+            operationUuid = "op-o1-stale",
+            payloadJson = json.encodeToString(
+                OutdoorSession.serializer(), session.copy(distanceMeters = 1.0, revision = 1)
+            ),
+        )
+        applier.apply(stale)
+        assertEquals(1_200.0, store.outdoorSessions.byId(owner, "o1")!!.distanceMeters, 0.0001)
+        assertTrue(applier.seenOperation("op-o1-stale"))
+
+        // DELETE tombstones and removes the row.
+        val del = event("outdoor_session", "o1", op = SyncEvent.Op.DELETE)
+        applier.apply(del)
+        assertNull(store.outdoorSessions.byId(owner, "o1"))
+        assertNotNull(store.tombstones.byEntity(owner, "outdoor_session", "o1"))
+        assertTrue(applier.seenOperation(del.operationUuid))
+    }
+
+    @Test
     fun `malformed payload writes nothing and stays unapplied`() = runBlocking {
         val store = FakeStore()
         val applier = RemoteEventApplier(store, owner)
@@ -346,6 +395,16 @@ class RemoteEventApplierTest {
         override suspend fun hardDelete(ownerUID: String, id: String) { rows.remove(ownerUID to id) }
     }
 
+    private class FakeOutdoorSessionDao : OutdoorSessionDao {
+        val rows = linkedMapOf<Pair<String, String>, OutdoorSessionEntity>()
+        override suspend fun upsert(s: OutdoorSessionEntity) { rows[s.ownerUID to s.id] = s }
+        override suspend fun byId(ownerUID: String, id: String) = rows[ownerUID to id]
+        override suspend fun list(ownerUID: String) = rows.values
+            .filter { it.ownerUID == ownerUID && it.deletedUtc == null }
+            .sortedByDescending { it.startedUtc }
+        override suspend fun hardDelete(ownerUID: String, id: String) { rows.remove(ownerUID to id) }
+    }
+
     private class FakeTombstoneDao : TombstoneDao {
         val rows = linkedMapOf<Triple<String, String, String>, TombstoneEntity>()
         override suspend fun upsert(t: TombstoneEntity) {
@@ -364,6 +423,7 @@ class RemoteEventApplierTest {
         val fastingSchedules = FakeFastingScheduleDao()
         val healthObservations = FakeHealthObservationDao()
         val watchWorkouts = FakeWatchWorkoutDao()
+        val outdoorSessions = FakeOutdoorSessionDao()
         val tombstones = FakeTombstoneDao()
 
         override fun outbox() = outbox
@@ -374,6 +434,7 @@ class RemoteEventApplierTest {
         override fun fastingSchedules() = fastingSchedules
         override fun healthObservations() = healthObservations
         override fun watchWorkouts() = watchWorkouts
+        override fun outdoorSessions() = outdoorSessions
         override fun tombstones() = tombstones
         override suspend fun <T> inTransaction(block: suspend () -> T): T = block()
     }

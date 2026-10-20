@@ -10,6 +10,17 @@
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
     <uses-permission android:name="android.permission.health.READ_OXYGEN_SATURATION" />
 
+    <!-- Outdoor GPS tracking (Coach "Outdoor"). Fine/coarse location are
+         requested only when the user taps Start; no background location —
+         the foreground service's "location" type keeps recording while the
+         screen is off for the user-started session. POST_NOTIFICATIONS is
+         requested on API 33+ so the persistent recording notification shows. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!-- Personal health DB, watch companion app data are excluded from
          auto-backup per §24 (explicit Drive sync only). -->
     <application
@@ -52,6 +63,13 @@
                     android:pathPrefix="/nobelle/sync" />
             </intent-filter>
         </service>
+
+        <!-- Foreground GPS recorder for user-started outdoor sessions.
+             Not exported: started only by the app itself via explicit intents. -->
+        <service
+            android:name=".outdoor.OutdoorTrackService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
 
         <activity
             android:name="net.openid.appauth.RedirectUriReceiverActivity"

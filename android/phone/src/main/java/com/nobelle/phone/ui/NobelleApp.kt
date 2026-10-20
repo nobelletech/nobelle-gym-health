@@ -28,6 +28,7 @@ import com.nobelle.phone.gym.GymVisitInput
 import com.nobelle.phone.health.ManualEntryInput
 import com.nobelle.phone.gym.GymVisitViewModel
 import com.nobelle.phone.health.HealthConnectViewModel
+import com.nobelle.phone.outdoor.OutdoorViewModel
 import com.nobelle.phone.ui.screens.CoachScreen
 import com.nobelle.phone.ui.screens.MyHealthScreen
 import com.nobelle.phone.ui.screens.ProfileScreen
@@ -89,6 +90,10 @@ fun NobelleApp(
     onDeleteManualHealthEntry: (String) -> Unit,
     showHealthRationale: Boolean,
     onDismissHealthRationale: () -> Unit,
+    outdoor: OutdoorViewModel.OutdoorUiState,
+    onStartOutdoor: (String) -> Unit,
+    onStopOutdoor: () -> Unit,
+    onDeleteOutdoor: (String) -> Unit,
     onProgressRefresh: () -> Unit,
 ) {
     val nav = rememberNavController()
@@ -140,7 +145,14 @@ fun NobelleApp(
                     onWatchForget = onWatchForget,
                 )
             }
-            composable(Destination.COACH.route) { CoachScreen() }
+            composable(Destination.COACH.route) {
+                CoachScreen(
+                    outdoor = outdoor,
+                    onStartOutdoor = onStartOutdoor,
+                    onStopOutdoor = onStopOutdoor,
+                    onDeleteOutdoor = onDeleteOutdoor,
+                )
+            }
             composable(Destination.HEALTH.route) {
                 MyHealthScreen(
                     fasting = fasting,

@@ -20,6 +20,7 @@ import com.nobelle.phone.fasting.FastingViewModel
 import com.nobelle.phone.gym.GymVisitViewModel
 import com.nobelle.phone.health.HealthConnectController
 import com.nobelle.phone.health.HealthConnectViewModel
+import com.nobelle.phone.outdoor.OutdoorViewModel
 import com.nobelle.phone.ui.NobelleApp
 import com.nobelle.phone.ui.NobelleTheme
 import com.nobelle.phone.wear.WatchEnrollViewModel
@@ -33,6 +34,7 @@ class MainActivity : ComponentActivity() {
     private val fastingModel by viewModels<FastingViewModel>()
     private val healthConnectModel by viewModels<HealthConnectViewModel>()
     private val watchEnrollModel by viewModels<WatchEnrollViewModel>()
+    private val outdoorModel by viewModels<OutdoorViewModel>()
     private lateinit var driveAuthorization: DriveAuthorizationController
     private lateinit var healthConnect: HealthConnectController
     private val healthRationaleRequested = mutableStateOf(false)
@@ -51,6 +53,7 @@ class MainActivity : ComponentActivity() {
             val fastingState by fastingModel.state.collectAsStateWithLifecycle()
             val healthConnectState by healthConnectModel.state.collectAsStateWithLifecycle()
             val watchEnrollState by watchEnrollModel.state.collectAsStateWithLifecycle()
+            val outdoorState by outdoorModel.state.collectAsStateWithLifecycle()
             val showHealthRationale by healthRationaleRequested
             LaunchedEffect(ownerId?.uid) {
                 workoutModel.selectOwner(ownerId)
@@ -58,6 +61,7 @@ class MainActivity : ComponentActivity() {
                 fastingModel.selectOwner(ownerId)
                 healthConnectModel.selectOwner(ownerId)
                 watchEnrollModel.selectOwner(ownerId)
+                outdoorModel.selectOwner(ownerId)
             }
             NobelleTheme {
                 NobelleApp(
@@ -118,6 +122,10 @@ class MainActivity : ComponentActivity() {
                     onDeleteManualHealthEntry = healthConnectModel::deleteManual,
                     showHealthRationale = showHealthRationale,
                     onDismissHealthRationale = { healthRationaleRequested.value = false },
+                    outdoor = outdoorState,
+                    onStartOutdoor = outdoorModel::start,
+                    onStopOutdoor = outdoorModel::stop,
+                    onDeleteOutdoor = outdoorModel::deleteSession,
                     // Re-running each ViewModel's owner-selection path is the
                     // existing reload: same owner keeps state, stores re-read.
                     onProgressRefresh = {
