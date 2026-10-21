@@ -39,6 +39,7 @@ import com.nobelle.phone.ui.screens.ProgressScreen
 import com.nobelle.phone.ui.screens.TodayScreen
 import com.nobelle.phone.wear.WatchEnrollViewModel
 import com.nobelle.phone.workout.SetEntryInput
+import com.nobelle.phone.workout.SlotLogEntry
 import com.nobelle.phone.workout.WorkoutViewModel
 
 // Primary navigation (§3): Today | Coach | My Health | Progress | Profile
@@ -65,6 +66,8 @@ fun NobelleApp(
     onFinishWorkout: () -> Unit,
     onDiscardWorkout: () -> Unit,
     onAddSet: (SetEntryInput) -> Unit,
+    onCompleteSlot: (SlotLogEntry) -> Unit,
+    onSwapSlot: (setId: String, exerciseId: String) -> Unit,
     gymVisits: GymVisitViewModel.GymVisitUiState,
     onLogVisitNow: (gymLabel: String?, category: String?, notes: String?) -> Unit,
     onBackdateVisit: (GymVisitInput) -> Unit,
@@ -146,6 +149,8 @@ fun NobelleApp(
                     onFinish = onFinishWorkout,
                     onDiscard = onDiscardWorkout,
                     onAddSet = onAddSet,
+                    onCompleteSlot = onCompleteSlot,
+                    onSwapSlot = onSwapSlot,
                     onLogVisitNow = onLogVisitNow,
                     onBackdateVisit = onBackdateVisit,
                     onEndVisit = onEndVisit,

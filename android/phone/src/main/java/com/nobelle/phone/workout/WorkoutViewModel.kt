@@ -3,8 +3,10 @@ package com.nobelle.phone.workout
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.nobelle.core.coaching.ExerciseCatalog
 import com.nobelle.core.data.repository.WorkoutPayload
 import com.nobelle.core.data.repository.WorkoutRepository
+import com.nobelle.core.model.ExerciseDefinition
 import com.nobelle.core.model.ExerciseSet
 import com.nobelle.core.model.OwnerId
 import com.nobelle.core.model.SetType
@@ -34,6 +36,9 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
          *  these for week counts and personal bests. */
         val history: List<WorkoutPayload> = emptyList(),
         val watchWorkouts: List<WatchWorkoutPayload> = emptyList(),
+        /** Reviewed exercise catalog by id — resolves slot exercise names and
+         *  easier/harder swap hints on the guided card. */
+        val catalogById: Map<String, ExerciseDefinition> = emptyMap(),
         val message: String? = null,
     )
 
@@ -45,7 +50,10 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private val mutableState = MutableStateFlow(
-        WorkoutUiState(message = if (repository == null) INIT_ERROR else null)
+        WorkoutUiState(
+            catalogById = runCatching { ExerciseCatalog.byId() }.getOrDefault(emptyMap()),
+            message = if (repository == null) INIT_ERROR else null,
+        )
     )
     val state: StateFlow<WorkoutUiState> = mutableState
 
@@ -59,6 +67,7 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         if (owner == null) {
             mutableState.value = WorkoutUiState(
                 ownerAvailable = false,
+                catalogById = mutableState.value.catalogById,
                 message = if (repository == null) INIT_ERROR else null,
             )
             return
@@ -69,6 +78,7 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
             mutableState.value = WorkoutUiState(
                 ownerAvailable = repository != null,
                 loading = false,
+                catalogById = mutableState.value.catalogById,
                 message = if (repository == null) INIT_ERROR else null,
             )
         }
@@ -136,6 +146,30 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
             rpe, rir, tempo, painFlag, notes, setType, groupId, substitutedForExerciseId,
         )
         null
+    }
+
+    /**
+     * Fills one prefilled template slot in place (UPDATE, not append) — the
+     * guided card's per-slot Log path. Only the user's entered values land.
+     */
+    fun completeSlot(
+        setId: String,
+        reps: Int?,
+        loadKg: Double?,
+        durationSec: Int?,
+        rpe: Double?,
+        notes: String?,
+    ) = mutate { owner, repo ->
+        val session = currentSession() ?: return@mutate "No active workout"
+        repo.completeSetSlot(owner, session.id, setId, reps, loadKg, durationSec, rpe, notes)
+        null
+    }
+
+    /** Swaps an open slot to a user-chosen alternative exercise (provenance kept). */
+    fun swapSlotExercise(setId: String, exerciseId: String) = mutate { owner, repo ->
+        val session = currentSession() ?: return@mutate "No active workout"
+        repo.substituteSetSlot(owner, session.id, setId, exerciseId)
+        "Exercise swapped — the original is kept on the set for reference"
     }
 
     fun finish() = mutate { owner, repo ->

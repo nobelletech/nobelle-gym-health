@@ -31,6 +31,9 @@ interface WorkoutSetDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(set: WorkoutSetEntity)
 
+    @Query("SELECT * FROM workout_sets WHERE ownerUID = :ownerUID AND id = :id")
+    suspend fun byId(ownerUID: String, id: String): WorkoutSetEntity?
+
     @Query("SELECT * FROM workout_sets WHERE ownerUID = :ownerUID AND sessionId = :sessionId")
     suspend fun bySession(ownerUID: String, sessionId: String): List<WorkoutSetEntity>
 

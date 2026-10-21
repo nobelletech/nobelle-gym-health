@@ -193,6 +193,74 @@ class WorkoutRepository(
         set
     }
 
+    /**
+     * Fills a prefilled slot in place (UPDATE, never an appended row). Only
+     * user-entered values are written — the repository never invents reps or
+     * load (§8C). A slot is fillable exactly once: a completedUtc value marks
+     * it logged and the guided UI treats it as read-only.
+     */
+    suspend fun completeSetSlot(
+        owner: OwnerId,
+        sessionId: String,
+        setId: String,
+        reps: Int?,
+        loadKg: Double?,
+        durationSec: Int?,
+        rpe: Double?,
+        notes: String?,
+    ): ExerciseSet = database.withTransaction {
+        val session = loadSession(owner, sessionId)
+        require(session.state == WorkoutState.ACTIVE || session.state == WorkoutState.PAUSED) {
+            "Sets can only be logged on an active or paused workout"
+        }
+        require(reps == null || reps >= 0) { "reps must be nonnegative" }
+        require(loadKg == null || loadKg >= 0) { "loadKg must be nonnegative" }
+        require(durationSec == null || durationSec >= 0) { "durationSec must be nonnegative" }
+        require(rpe == null || rpe in 0.0..10.0) { "rpe must be within 0..10" }
+        val slot = loadSet(owner, sessionId, setId)
+        require(slot.completedUtc == null) { "This set slot is already logged" }
+        val completed = slot.copy(
+            reps = reps,
+            loadKg = loadKg,
+            durationSec = durationSec,
+            rpe = rpe,
+            notes = notes?.takeIf { it.isNotBlank() } ?: slot.notes,
+            completedUtc = now(),
+            revision = slot.revision + 1,
+        )
+        database.workoutSets().upsert(completed.toEntity(owner.uid))
+        completed
+    }
+
+    /**
+     * Swaps an open slot to a different exercise the user chose (e.g. an
+     * easier or harder variant). The original exercise id is preserved on
+     * [ExerciseSet.substitutedForExerciseId] so the change keeps honest
+     * provenance instead of looking like it was always planned.
+     */
+    suspend fun substituteSetSlot(
+        owner: OwnerId,
+        sessionId: String,
+        setId: String,
+        exerciseId: String,
+    ): ExerciseSet = database.withTransaction {
+        val session = loadSession(owner, sessionId)
+        require(session.state == WorkoutState.ACTIVE || session.state == WorkoutState.PAUSED) {
+            "Sets can only be changed on an active or paused workout"
+        }
+        require(exerciseId.isNotBlank()) { "substitute exercise id must not be blank" }
+        val slot = loadSet(owner, sessionId, setId)
+        require(slot.completedUtc == null) { "A logged set cannot be substituted" }
+        if (slot.exerciseId == exerciseId) return@withTransaction slot
+        val swapped = slot.copy(
+            exerciseId = exerciseId,
+            substitutedForExerciseId = slot.substitutedForExerciseId ?: slot.exerciseId,
+            revision = slot.revision + 1,
+        )
+        database.workoutSets().upsert(swapped.toEntity(owner.uid))
+        swapped
+    }
+
     suspend fun finish(owner: OwnerId, sessionId: String): WorkoutSession = database.withTransaction {
         val session = loadSession(owner, sessionId)
         require(session.state == WorkoutState.ACTIVE || session.state == WorkoutState.PAUSED) {
@@ -245,6 +313,12 @@ class WorkoutRepository(
             sequence = session.sequence + 1,
             revision = session.revision + 1,
         )
+
+    private suspend fun loadSet(owner: OwnerId, sessionId: String, setId: String): ExerciseSet {
+        val entity = database.workoutSets().byId(owner.uid, setId)
+            ?: throw NoSuchElementException("Exercise set not found for this owner")
+        return decodeSet(entity, owner.uid, sessionId)
+    }
 
     private suspend fun loadSession(owner: OwnerId, sessionId: String): WorkoutSession {
         val entity = database.sessions().byId(owner.uid, sessionId)

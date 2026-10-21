@@ -98,6 +98,17 @@ class MainActivity : ComponentActivity() {
                             substitutedForExerciseId = entry.substitutedForExerciseId,
                         )
                     },
+                    onCompleteSlot = { entry ->
+                        workoutModel.completeSlot(
+                            setId = entry.setId,
+                            reps = entry.reps,
+                            loadKg = entry.loadKg,
+                            durationSec = entry.durationSec,
+                            rpe = entry.rpe,
+                            notes = entry.notes,
+                        )
+                    },
+                    onSwapSlot = workoutModel::swapSlotExercise,
                     gymVisits = gymVisitState,
                     onLogVisitNow = gymVisitModel::logNow,
                     onBackdateVisit = gymVisitModel::addBackdated,

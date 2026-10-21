@@ -37,7 +37,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.LaunchedEffect
 import com.nobelle.core.data.repository.WorkoutPayload
+import com.nobelle.core.model.ExerciseDefinition
 import com.nobelle.core.model.ExerciseSet
 import com.nobelle.core.model.GymVisit
 import com.nobelle.core.model.SetType
@@ -50,9 +52,12 @@ import com.nobelle.phone.gym.GymVisitViewModel
 import com.nobelle.phone.wear.WatchEnrollViewModel
 import com.nobelle.phone.workout.ExercisePreset
 import com.nobelle.phone.workout.ExercisePresetCatalog
+import com.nobelle.phone.workout.GuidedSession
 import com.nobelle.phone.workout.SetEntryInput
+import com.nobelle.phone.workout.SlotLogEntry
 import com.nobelle.phone.workout.SetEntryParser
 import com.nobelle.phone.workout.WorkoutViewModel
+import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
@@ -72,6 +77,8 @@ fun TodayScreen(
     onFinish: () -> Unit,
     onDiscard: () -> Unit,
     onAddSet: (SetEntryInput) -> Unit,
+    onCompleteSlot: (SlotLogEntry) -> Unit,
+    onSwapSlot: (setId: String, exerciseId: String) -> Unit,
     onLogVisitNow: (gymLabel: String?, category: String?, notes: String?) -> Unit,
     onBackdateVisit: (GymVisitInput) -> Unit,
     onEndVisit: (String) -> Unit,
@@ -103,6 +110,19 @@ fun TodayScreen(
         if (session != null &&
             (session.state == WorkoutState.ACTIVE || session.state == WorkoutState.PAUSED)
         ) {
+            // Guided card appears whenever the session has unfilled slots —
+            // in practice that means it was started from a template (or a
+            // planned session with one); freestyle sessions have no blank
+            // slots and see only the generic form below.
+            if (GuidedSession.hasOpenSlots(workout.sets)) {
+                GuidedWorkoutCard(
+                    sets = workout.sets,
+                    catalogById = workout.catalogById,
+                    enabled = !workout.loading,
+                    onCompleteSlot = onCompleteSlot,
+                    onSwapSlot = onSwapSlot,
+                )
+            }
             SetEntryCard(
                 enabled = !workout.loading,
                 onAddSet = onAddSet,
@@ -215,7 +235,8 @@ private fun WorkoutCard(
                     Text(
                         buildString {
                             if (started != null) append("Started $started · ")
-                            append("${workout.sets.size} set${if (workout.sets.size == 1) "" else "s"} logged")
+                            val logged = workout.sets.count { it.completedUtc != null }
+                            append("$logged set${if (logged == 1) "" else "s"} logged")
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -818,11 +839,328 @@ private fun SetsCard(sets: List<ExerciseSet>) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            sets.sortedBy { it.setIndex }.forEach { set ->
+            // Open prefilled slots are guided on the card above; this list
+            // shows only what the user has actually logged.
+            sets.filter { it.completedUtc != null }.sortedBy { it.setIndex }.forEach { set ->
                 Text(set.describe(), style = MaterialTheme.typography.bodyMedium)
             }
         }
     }
+}
+
+/**
+ * Guided template session: the session's prefilled slots in order. Open
+ * slots offer a compact Log dialog; logged slots are read-only summaries.
+ * A rest countdown appears after logging when the next open slot carries a
+ * rest target — it is a plain timer, not a coach suggestion.
+ */
+@Composable
+private fun GuidedWorkoutCard(
+    sets: List<ExerciseSet>,
+    catalogById: Map<String, ExerciseDefinition>,
+    enabled: Boolean,
+    onCompleteSlot: (SlotLogEntry) -> Unit,
+    onSwapSlot: (setId: String, exerciseId: String) -> Unit,
+) {
+    var loggingSlot by remember { mutableStateOf<ExerciseSet?>(null) }
+    var swappingSlot by remember { mutableStateOf<ExerciseSet?>(null) }
+    // Rest cue: deadline in epoch ms plus what the user is resting for.
+    var restDeadlineMs by remember { mutableStateOf<Long?>(null) }
+    var restLabel by remember { mutableStateOf("") }
+    var restNowMs by remember { mutableStateOf(0L) }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Guided workout", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Fill each set as you do it — nothing is logged for you.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            GuidedSession.ordered(sets).forEach { slot ->
+                GuidedSlotRow(
+                    slot = slot,
+                    setNumber = GuidedSession.setNumberWithinExercise(sets, slot),
+                    catalogById = catalogById,
+                    enabled = enabled,
+                    onLog = { loggingSlot = slot },
+                    onSwap = { swappingSlot = slot },
+                )
+            }
+            restDeadlineMs?.let { deadline ->
+                RestTimerRow(
+                    deadlineMs = deadline,
+                    nowMs = restNowMs,
+                    label = restLabel,
+                    onExtend = { restDeadlineMs = deadline + 30_000 },
+                    onSkip = { restDeadlineMs = null },
+                )
+            }
+        }
+    }
+
+    // 1s tick only while a rest is armed; stops itself at zero.
+    LaunchedEffect(restDeadlineMs) {
+        val deadline = restDeadlineMs ?: return@LaunchedEffect
+        while (true) {
+            restNowMs = System.currentTimeMillis()
+            if (restNowMs >= deadline) break
+            delay(1_000)
+        }
+    }
+
+    loggingSlot?.let { slot ->
+        SlotLogDialog(
+            slot = slot,
+            title = exerciseDisplayName(slot.exerciseId, catalogById),
+            enabled = enabled,
+            onDismiss = { loggingSlot = null },
+            onSave = { entry ->
+                loggingSlot = null
+                onCompleteSlot(entry)
+                // Arm the rest timer from the NEXT open slot's rest target
+                // (the recovery planned before that set).
+                val cue = GuidedSession.restCueAfter(sets, slot.id)
+                val next = GuidedSession.nextOpenSlot(sets, slot.id)
+                if (cue != null && next != null) {
+                    restDeadlineMs = System.currentTimeMillis() + cue * 1_000L
+                    restLabel = "next: ${exerciseDisplayName(next.exerciseId, catalogById)} " +
+                        "· set ${GuidedSession.setNumberWithinExercise(sets, next)}"
+                } else {
+                    restDeadlineMs = null
+                }
+            },
+        )
+    }
+
+    swappingSlot?.let { slot ->
+        val definition = catalogById[slot.exerciseId]
+        val alternatives = listOfNotNull(
+            definition?.easierAlternativeId?.let { id ->
+                catalogById[id]?.let { Triple("Easier", it, id) }
+            },
+            definition?.harderAlternativeId?.let { id ->
+                catalogById[id]?.let { Triple("Harder", it, id) }
+            },
+        )
+        if (alternatives.isEmpty()) {
+            swappingSlot = null
+        } else {
+            AlertDialog(
+                onDismissRequest = { swappingSlot = null },
+                title = { Text("Swap exercise") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            "Current: ${exerciseDisplayName(slot.exerciseId, catalogById)}",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        alternatives.forEach { (why, alt, id) ->
+                            Column(
+                                Modifier.fillMaxWidth()
+                                    .clickable {
+                                        swappingSlot = null
+                                        onSwapSlot(slot.id, id)
+                                    }
+                                    .padding(vertical = 8.dp)
+                                    .semantics { contentDescription = "$why — ${alt.name}" },
+                            ) {
+                                Text(
+                                    "$why — ${alt.name}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                Text(
+                                    "${alt.equipment.name.lowercase().replace('_', ' ')} · " +
+                                        alt.muscleGroups.joinToString(),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { swappingSlot = null }) { Text("Cancel") }
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun GuidedSlotRow(
+    slot: ExerciseSet,
+    setNumber: Int,
+    catalogById: Map<String, ExerciseDefinition>,
+    enabled: Boolean,
+    onLog: () -> Unit,
+    onSwap: () -> Unit,
+) {
+    val open = GuidedSession.isOpen(slot)
+    val name = exerciseDisplayName(slot.exerciseId, catalogById)
+    val definition = catalogById[slot.exerciseId]
+    val hasAlternatives = definition?.easierAlternativeId != null ||
+        definition?.harderAlternativeId != null
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                "$name · set $setNumber",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                if (open) {
+                    slot.notes?.let { "Open — $it" } ?: "Open — tap Log when done"
+                } else {
+                    slot.summary()
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            slot.substitutedForExerciseId?.let { original ->
+                Text(
+                    "Swapped from ${exerciseDisplayName(original, catalogById)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        if (open) {
+            if (hasAlternatives) {
+                TextButton(
+                    onClick = onSwap,
+                    enabled = enabled,
+                    modifier = Modifier.semantics { contentDescription = "Swap $name" },
+                ) { Text("Swap") }
+            }
+            Button(
+                onClick = onLog,
+                enabled = enabled,
+                modifier = Modifier.semantics { contentDescription = "Log $name set $setNumber" },
+            ) { Text("Log") }
+        }
+    }
+}
+
+/** Compact per-slot entry — reps, load, duration, RPE and notes only. */
+@Composable
+private fun SlotLogDialog(
+    slot: ExerciseSet,
+    title: String,
+    enabled: Boolean,
+    onDismiss: () -> Unit,
+    onSave: (SlotLogEntry) -> Unit,
+) {
+    var reps by remember { mutableStateOf("") }
+    var load by remember { mutableStateOf("") }
+    var duration by remember { mutableStateOf("") }
+    var rpe by remember { mutableStateOf("") }
+    var notes by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Log $title") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "Enter what you actually did.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    NumberField(reps, { reps = it }, "Reps", Modifier.weight(1f))
+                    NumberField(load, { load = it }, "Load", Modifier.weight(1f), decimal = true, suffix = "kg")
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    NumberField(duration, { duration = it }, "Duration", Modifier.weight(1f), suffix = "s")
+                    NumberField(rpe, { rpe = it }, "RPE", Modifier.weight(1f), decimal = true)
+                }
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text("Notes") },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = enabled,
+                onClick = {
+                    // Reuse the generic parser for identical number/range rules.
+                    when (val parsed = SetEntryParser.parse(
+                        exerciseId = slot.exerciseId,
+                        reps = reps, loadKg = load, durationSec = duration,
+                        restSec = "", rpe = rpe, rir = "", tempo = "",
+                        painFlag = false, notes = notes,
+                    )) {
+                        is SetEntryParser.Result.Ok -> onSave(
+                            SlotLogEntry(
+                                setId = slot.id,
+                                reps = parsed.entry.reps,
+                                loadKg = parsed.entry.loadKg,
+                                durationSec = parsed.entry.durationSec,
+                                rpe = parsed.entry.rpe,
+                                notes = parsed.entry.notes,
+                            )
+                        )
+                        is SetEntryParser.Result.Invalid -> error = parsed.message
+                    }
+                },
+            ) { Text("Save set") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+}
+
+/** Plain countdown — a timer for the rest the template already specified. */
+@Composable
+private fun RestTimerRow(
+    deadlineMs: Long,
+    nowMs: Long,
+    label: String,
+    onExtend: () -> Unit,
+    onSkip: () -> Unit,
+) {
+    val remaining = GuidedSession.remainingSeconds(deadlineMs, nowMs)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                if (remaining > 0) "Rest ${remaining}s — $label" else "Rest done — $label",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+        TextButton(onClick = onExtend) { Text("+30s") }
+        TextButton(onClick = onSkip) { Text("Skip") }
+    }
+}
+
+private fun exerciseDisplayName(
+    exerciseId: String,
+    catalogById: Map<String, ExerciseDefinition>,
+): String = catalogById[exerciseId]?.name ?: exerciseId
+
+/** One-line read-only summary of a logged slot. */
+private fun ExerciseSet.summary(): String {
+    val parts = mutableListOf<String>()
+    reps?.let { parts += "$it reps" }
+    loadKg?.let { parts += "${it.formatWithoutNeedlessDecimal()}kg" }
+    durationSec?.let { parts += "${it}s" }
+    rpe?.let { parts += "RPE ${it.formatWithoutNeedlessDecimal()}" }
+    if (parts.isEmpty()) parts += "Logged"
+    notes?.let { parts += "— $it" }
+    return parts.joinToString(" · ")
 }
 
 private fun ExerciseSet.describe(): String {

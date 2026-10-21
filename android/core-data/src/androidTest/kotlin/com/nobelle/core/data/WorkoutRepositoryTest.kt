@@ -262,6 +262,121 @@ class WorkoutRepositoryTest {
     }
 
     @Test
+    fun completeSetSlotFillsInPlaceWithoutAppending() = runBlocking {
+        val template = com.nobelle.core.model.WorkoutTemplate(
+            id = "t1", ownerUID = ownerA.uid, name = "Upper", category = "Strength",
+            exercises = listOf(
+                com.nobelle.core.model.TemplateExercise("push-up", sets = 2, restSec = 60),
+            ),
+        )
+        val session = repo.startFromTemplate(ownerA, template, "device-x", "America/Toronto", -240)
+        val slots = repo.sets(ownerA, session.id)
+        assertEquals(2, slots.size)
+
+        val completed = repo.completeSetSlot(
+            ownerA, session.id, slots[0].id,
+            reps = 8, loadKg = null, durationSec = null, rpe = 7.0, notes = "felt good",
+        )
+
+        assertEquals(slots[0].id, completed.id) // same row, not a new set
+        assertEquals(8, completed.reps)
+        assertEquals(7.0, completed.rpe!!, 0.001)
+        assertNotNull(completed.completedUtc)
+        assertEquals(slots[0].revision + 1, completed.revision)
+
+        val after = repo.sets(ownerA, session.id)
+        assertEquals(2, after.size) // update, not append
+        assertEquals(8, after[0].reps)
+        assertNull(after[1].reps)
+        assertNull(after[1].completedUtc)
+
+        // Still no outbox: sets travel inside the finish() payload.
+        assertTrue(db.outbox().pending(ownerA.uid).isEmpty())
+        repo.finish(ownerA, session.id)
+        val event = json.decodeFromString(
+            SyncEvent.serializer(), db.outbox().pending(ownerA.uid).single().payloadJson,
+        )
+        val payload = json.decodeFromString(WorkoutPayload.serializer(), event.payloadJson)
+        assertEquals(2, payload.sets.size)
+        assertEquals(8, payload.sets[0].reps)
+    }
+
+    @Test
+    fun completeSetSlotRejectsLoggedSlotForeignOwnerAndFinishedSession() = runBlocking {
+        val template = com.nobelle.core.model.WorkoutTemplate(
+            id = "t1", ownerUID = ownerA.uid, name = "Upper", category = "Strength",
+            exercises = listOf(
+                com.nobelle.core.model.TemplateExercise("push-up", sets = 1, restSec = 60),
+            ),
+        )
+        val session = repo.startFromTemplate(ownerA, template, "device-x", "America/Toronto", -240)
+        val slot = repo.sets(ownerA, session.id).single()
+
+        // Another owner cannot reach the set at all.
+        try {
+            repo.completeSetSlot(ownerB, session.id, slot.id, 5, null, null, null, null)
+            fail("a foreign owner must not complete the slot")
+        } catch (expected: Exception) {
+        }
+        assertTrue(repo.sets(ownerB, session.id).isEmpty())
+
+        repo.completeSetSlot(ownerA, session.id, slot.id, 5, null, null, null, null)
+        try {
+            repo.completeSetSlot(ownerA, session.id, slot.id, 10, null, null, null, null)
+            fail("a logged slot must not be refilled")
+        } catch (expected: IllegalArgumentException) {
+        }
+
+        repo.finish(ownerA, session.id)
+        val other = repo.startFromTemplate(ownerA, template.copy(id = "t2"), "device-x", "America/Toronto", -240)
+        val orphanSlot = repo.sets(ownerA, other.id).single()
+        try {
+            // The set id belongs to the new session; passing the finished
+            // session id must not decode it.
+            repo.completeSetSlot(ownerA, session.id, orphanSlot.id, 1, null, null, null, null)
+            fail("a set cannot be logged against the wrong session")
+        } catch (expected: Exception) {
+        }
+    }
+
+    @Test
+    fun substituteSetSlotKeepsProvenanceAndBumpsRevision() = runBlocking {
+        val template = com.nobelle.core.model.WorkoutTemplate(
+            id = "t1", ownerUID = ownerA.uid, name = "Upper", category = "Strength",
+            exercises = listOf(
+                com.nobelle.core.model.TemplateExercise("push-up", sets = 1, restSec = 60),
+            ),
+        )
+        val session = repo.startFromTemplate(ownerA, template, "device-x", "America/Toronto", -240)
+        val slot = repo.sets(ownerA, session.id).single()
+
+        val swapped = repo.substituteSetSlot(ownerA, session.id, slot.id, "knee-push-up")
+        assertEquals("knee-push-up", swapped.exerciseId)
+        assertEquals("push-up", swapped.substitutedForExerciseId)
+        assertEquals(slot.revision + 1, swapped.revision)
+        assertNull(swapped.completedUtc)
+        assertEquals(1, repo.sets(ownerA, session.id).size) // update, not append
+
+        // A second swap keeps the ORIGINAL exercise as provenance.
+        val again = repo.substituteSetSlot(ownerA, session.id, slot.id, "wall-push-up")
+        assertEquals("wall-push-up", again.exerciseId)
+        assertEquals("push-up", again.substitutedForExerciseId)
+
+        // Logged slots and foreign owners cannot be swapped.
+        repo.completeSetSlot(ownerA, session.id, slot.id, 8, null, null, null, null)
+        try {
+            repo.substituteSetSlot(ownerA, session.id, slot.id, "dip")
+            fail("a logged slot must not be substituted")
+        } catch (expected: IllegalArgumentException) {
+        }
+        try {
+            repo.substituteSetSlot(ownerB, session.id, slot.id, "dip")
+            fail("a foreign owner must not substitute the slot")
+        } catch (expected: Exception) {
+        }
+    }
+
+    @Test
     fun discardIsLocalOnlyAndNeverEnqueuesSync() = runBlocking {
         val session = repo.start(ownerA, "strength", "device-x", "America/Toronto", -240)
         val discarded = repo.discard(ownerA, session.id)
