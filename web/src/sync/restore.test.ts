@@ -97,6 +97,34 @@ describe("restoreFromDrive", () => {
     expect(snapshot.tombstones.has(tombstoneKey("workout_template", "t1"))).toBe(true);
   });
 
+  it("restores training plans by revision and tombstones them", async () => {
+    const plan = {
+      id: "p1", ownerUID: OWNER, weekStartDate: "2024-01-01", generatedBy: "rules-v1",
+      plannedSessions: [
+        { id: "ps1", ownerUID: OWNER, localDate: "2024-01-01", templateId: null, category: "full_body", status: "PLANNED", revision: 1 },
+        { id: "ps2", ownerUID: OWNER, localDate: "2024-01-03", templateId: null, category: "mobility", status: "SKIPPED", revision: 1 },
+      ],
+      revision: 2,
+    };
+    const events = [
+      syncEvent({ entityType: "training_plan", entityId: "p1", operationUuid: "new", revision: 2, payloadJson: JSON.stringify(plan) }),
+      syncEvent({ entityType: "training_plan", entityId: "p1", operationUuid: "stale", revision: 1, utc: "2024-01-02T00:00:00Z", payloadJson: JSON.stringify({ ...plan, weekStartDate: "2024-01-08", revision: 1 }) }),
+    ].map((event) => eventFile(event));
+    const restore = (files: typeof events) => restoreFromDrive(fakeDrive([{ files: files.map((entry) => entry.file) }], new Map(files.map((entry) => [entry.file.id, entry.body]))).client);
+    const snapshot = await restore(events);
+    expect(snapshot.trainingPlans.get("p1")?.weekStartDate).toBe("2024-01-01");
+    expect(snapshot.trainingPlans.get("p1")?.plannedSessions.length).toBe(2);
+    // Mismatched identity (foreign session owner) stays unapplied.
+    const bad = eventFile(syncEvent({ entityType: "training_plan", entityId: "p2", operationUuid: "bad", payloadJson: JSON.stringify({ ...plan, id: "p2", plannedSessions: [{ ...plan.plannedSessions[0], ownerUID: "other" }] }) }));
+    expect((await restore([bad])).trainingPlans.has("p2")).toBe(false);
+    const deleted = eventFile(syncEvent({ entityType: "training_plan", entityId: "p1", operationUuid: "delete", op: "DELETE", revision: 3 }));
+    expect((await restore([deleted])).trainingPlans.size).toBe(0);
+    const resurrect = eventFile(syncEvent({ entityType: "training_plan", entityId: "p1", operationUuid: "resurrect", revision: 5, payloadJson: JSON.stringify({ ...plan, revision: 5 }) }));
+    const after = await restore([resurrect]);
+    expect(after.trainingPlans.size).toBe(0);
+    expect(after.tombstones.has(tombstoneKey("training_plan", "p1"))).toBe(true);
+  });
+
   it("pages through the whole file list and applies every event", async () => {
     const a = eventFile(syncEvent({ entityId: "v1", operationUuid: "op-a", payloadJson: gymVisit("v1") }));
     const b = eventFile(syncEvent({ entityId: "v2", operationUuid: "op-b", payloadJson: gymVisit("v2") }));

@@ -178,6 +178,26 @@ data class WorkoutTemplateEntity(
     val revision: Long,
 )
 
+/**
+ * Owner-scoped weekly training plan. The embedded plannedSessions list lives
+ * inside payloadJson like templates do; weekStartDate/sessionCount are the
+ * display summary so lists never decode the wire JSON.
+ */
+@Entity(
+    tableName = "training_plans",
+    primaryKeys = ["ownerUID", "id"],
+    indices = [Index(value = ["ownerUID", "weekStartDate"])],
+)
+data class TrainingPlanEntity(
+    val ownerUID: String,
+    val id: String,
+    val weekStartDate: String,
+    val sessionCount: Int,
+    val generatedBy: String,
+    val payloadJson: String,
+    val revision: Long,
+)
+
 @Entity(
     tableName = "deletion_tombstones",
     primaryKeys = ["ownerUID", "entityType", "entityId"],

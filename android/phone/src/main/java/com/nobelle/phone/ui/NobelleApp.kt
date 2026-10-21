@@ -22,6 +22,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.nobelle.core.health.HealthConnectCategory
+import com.nobelle.core.model.PlannedSession
 import com.nobelle.core.model.TemplateExercise
 import com.nobelle.phone.coach.CoachViewModel
 import com.nobelle.phone.fasting.FastingBackdateInput
@@ -100,6 +101,11 @@ fun NobelleApp(
     onSaveTemplate: (id: String?, name: String, category: String, exercises: List<TemplateExercise>) -> Unit,
     onDeleteTemplate: (String) -> Unit,
     onStartTemplate: (String) -> Unit,
+    onGenerateWeek: () -> Unit,
+    onAcceptPlan: () -> Unit,
+    onDismissPlanSuggestion: () -> Unit,
+    onPlanSessionStatus: (String, String, PlannedSession.Status) -> Unit,
+    onStartPlannedSession: (String, String) -> Unit,
     onProgressRefresh: () -> Unit,
 ) {
     val nav = rememberNavController()
@@ -161,6 +167,11 @@ fun NobelleApp(
                     onSaveTemplate = onSaveTemplate,
                     onDeleteTemplate = onDeleteTemplate,
                     onStartTemplate = onStartTemplate,
+                    onGenerateWeek = onGenerateWeek,
+                    onAcceptPlan = onAcceptPlan,
+                    onDismissPlanSuggestion = onDismissPlanSuggestion,
+                    onPlanSessionStatus = onPlanSessionStatus,
+                    onStartPlannedSession = onStartPlannedSession,
                 )
             }
             composable(Destination.HEALTH.route) {

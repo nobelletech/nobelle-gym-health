@@ -268,6 +268,33 @@ class MigrationTest {
         db.close()
     }
 
+    @Test
+    fun migrate6To7() {
+        helper.createDatabase(TEST_DB, 6).apply {
+            execSQL("INSERT INTO workout_templates (ownerUID, id, name, category, payloadJson, revision) VALUES ('owner-a', 't1', 'Upper', 'Strength', '{}', 2)")
+            execSQL("INSERT INTO sync_outbox (operationUuid, ownerUID, entityId, entityType, state, attempts, lastError, createdUtc, payloadJson) VALUES ('op-7', 'owner-a', 't1', 'workout_template', 'PENDING', 0, NULL, 1700000000000, '{}')")
+            close()
+        }
+        // Validates the migrated DB byte-for-byte against Room's exported v7 schema.
+        val db = helper.runMigrationsAndValidate(TEST_DB, 7, true, NobelleDatabase.MIGRATION_6_7)
+        db.query("SELECT name FROM workout_templates WHERE id = 't1'").use {
+            assertTrue(it.moveToFirst())
+            assertEquals("Upper", it.getString(0))
+        }
+        db.query("SELECT state FROM sync_outbox WHERE operationUuid = 'op-7'").use {
+            assertTrue(it.moveToFirst())
+            assertEquals("PENDING", it.getString(0))
+        }
+        for (owner in listOf("owner-a", "owner-b")) {
+            db.execSQL("INSERT INTO training_plans (ownerUID, id, weekStartDate, sessionCount, generatedBy, payloadJson, revision) VALUES (?, 'p1', '2024-01-01', 3, 'rules-v1', '{}', 1)", arrayOf(owner))
+        }
+        db.query("SELECT COUNT(*) FROM training_plans WHERE id = 'p1'").use {
+            assertTrue(it.moveToFirst())
+            assertEquals(2, it.getInt(0))
+        }
+        db.close()
+    }
+
     private companion object {
         const val TEST_DB = "migration-test"
     }

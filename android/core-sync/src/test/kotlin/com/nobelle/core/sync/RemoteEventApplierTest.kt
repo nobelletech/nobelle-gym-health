@@ -8,8 +8,12 @@ import com.nobelle.core.data.GymVisitDao
 import com.nobelle.core.data.GymVisitEntity
 import com.nobelle.core.data.HealthObservationDao
 import com.nobelle.core.data.HealthObservationEntity
+import com.nobelle.core.data.TrainingPlanDao
+import com.nobelle.core.data.TrainingPlanEntity
 import com.nobelle.core.data.WorkoutTemplateDao
 import com.nobelle.core.data.WorkoutTemplateEntity
+import com.nobelle.core.model.PlannedSession
+import com.nobelle.core.model.TrainingPlan
 import com.nobelle.core.model.WorkoutTemplate
 import com.nobelle.core.data.OutboxDao
 import com.nobelle.core.data.OutdoorSessionDao
@@ -66,6 +70,51 @@ class RemoteEventApplierTest {
         applier.apply(upsert(template.copy(revision = 4), "resurrect"))
         assertNull(store.workoutTemplates.byId(owner, template.id))
         assertTrue(applier.seenOperation("resurrect"))
+    }
+
+    @Test
+    fun `training plan applies identity revision tombstone and blocks resurrection`() = runBlocking {
+        val store = FakeStore()
+        val applier = RemoteEventApplier(store, owner)
+        val plan = TrainingPlan(
+            id = "plan-1", ownerUID = owner, weekStartDate = "2024-01-01",
+            generatedBy = "rules-v1",
+            plannedSessions = listOf(
+                PlannedSession(id = "ps1", ownerUID = owner, localDate = "2024-01-01",
+                    templateId = null, category = "full_body"),
+                PlannedSession(id = "ps2", ownerUID = owner, localDate = "2024-01-03",
+                    templateId = null, category = "mobility",
+                    status = PlannedSession.Status.SKIPPED),
+            ),
+            revision = 2,
+        )
+        fun upsert(value: TrainingPlan, uuid: String) = event(
+            "training_plan", plan.id, operationUuid = uuid,
+            payloadJson = json.encodeToString(TrainingPlan.serializer(), value),
+        ).copy(revision = value.revision)
+
+        applier.apply(upsert(plan, "op-plan-new"))
+        val row = store.trainingPlans.byId(owner, plan.id)
+        assertNotNull(row)
+        assertEquals(2, row!!.sessionCount)
+        assertTrue(applier.seenOperation("op-plan-new"))
+
+        // Staler revision must not regress the row but still counts applied.
+        applier.apply(upsert(plan.copy(weekStartDate = "2024-01-08", revision = 1), "op-plan-stale"))
+        assertEquals("2024-01-01", store.trainingPlans.byId(owner, plan.id)!!.weekStartDate)
+        assertTrue(applier.seenOperation("op-plan-stale"))
+
+        // Identity mismatches stay unapplied.
+        applier.apply(upsert(plan.copy(ownerUID = "other"), "op-plan-owner"))
+        assertFalse(applier.seenOperation("op-plan-owner"))
+        applier.apply(upsert(plan.copy(revision = 3), "op-plan-mismatch").copy(revision = 4))
+        assertFalse(applier.seenOperation("op-plan-mismatch"))
+
+        applier.apply(event("training_plan", plan.id, SyncEvent.Op.DELETE, "op-plan-del"))
+        assertNull(store.trainingPlans.byId(owner, plan.id))
+        applier.apply(upsert(plan.copy(revision = 9), "op-plan-resurrect"))
+        assertNull(store.trainingPlans.byId(owner, plan.id))
+        assertTrue(applier.seenOperation("op-plan-resurrect"))
     }
 
     private fun event(
@@ -454,6 +503,18 @@ class RemoteEventApplierTest {
             override suspend fun list(ownerUID: String) = rows.values.filter { it.ownerUID == ownerUID }
             override suspend fun hardDelete(ownerUID: String, id: String) { rows.remove(ownerUID to id) }
         }
+        val trainingPlans = object : TrainingPlanDao {
+            val rows = mutableMapOf<Pair<String, String>, TrainingPlanEntity>()
+            override suspend fun upsert(plan: TrainingPlanEntity) { rows[plan.ownerUID to plan.id] = plan }
+            override suspend fun byId(ownerUID: String, id: String) = rows[ownerUID to id]
+            override suspend fun list(ownerUID: String) = rows.values
+                .filter { it.ownerUID == ownerUID }
+                .sortedWith(compareByDescending<TrainingPlanEntity> { it.weekStartDate }.thenBy { it.id })
+            override suspend fun byWeek(ownerUID: String, weekStartDate: String) = rows.values
+                .filter { it.ownerUID == ownerUID && it.weekStartDate == weekStartDate }
+                .sortedBy { it.id }
+            override suspend fun hardDelete(ownerUID: String, id: String) { rows.remove(ownerUID to id) }
+        }
         val outdoorSessions = FakeOutdoorSessionDao()
         val tombstones = FakeTombstoneDao()
 
@@ -467,6 +528,7 @@ class RemoteEventApplierTest {
         override fun watchWorkouts() = watchWorkouts
         override fun outdoorSessions() = outdoorSessions
         override fun workoutTemplates() = workoutTemplates
+        override fun trainingPlans() = trainingPlans
         override fun tombstones() = tombstones
         override suspend fun <T> inTransaction(block: suspend () -> T): T = block()
     }

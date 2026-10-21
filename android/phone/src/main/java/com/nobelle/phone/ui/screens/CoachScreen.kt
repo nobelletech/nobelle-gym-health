@@ -39,7 +39,9 @@ import com.nobelle.core.model.Equipment
 import com.nobelle.core.model.ExerciseDefinition
 import com.nobelle.core.model.ExperienceLevel
 import com.nobelle.core.model.OutdoorSession
+import com.nobelle.core.model.PlannedSession
 import com.nobelle.core.model.TemplateExercise
+import com.nobelle.core.model.TrainingPlan
 import com.nobelle.phone.coach.CoachViewModel
 import com.nobelle.phone.outdoor.OutdoorTrackService
 import com.nobelle.phone.outdoor.OutdoorViewModel
@@ -68,6 +70,11 @@ fun CoachScreen(
     onSaveTemplate: (id: String?, name: String, category: String, exercises: List<TemplateExercise>) -> Unit,
     onDeleteTemplate: (String) -> Unit,
     onStartTemplate: (String) -> Unit,
+    onGenerateWeek: () -> Unit,
+    onAcceptPlan: () -> Unit,
+    onDismissPlanSuggestion: () -> Unit,
+    onPlanSessionStatus: (planId: String, sessionId: String, status: PlannedSession.Status) -> Unit,
+    onStartPlannedSession: (planId: String, sessionId: String) -> Unit,
 ) {
     val context = LocalContext.current
     var showActivityPicker by remember { mutableStateOf(false) }
@@ -136,6 +143,14 @@ fun CoachScreen(
         ExerciseDetailDialog(exercise, coach.catalogById) { detail = null }
     }
 
+    coach.suggestedPlan?.let { suggestion ->
+        PlanReviewDialog(
+            suggestion = suggestion,
+            onAccept = onAcceptPlan,
+            onDismiss = onDismissPlanSuggestion,
+        )
+    }
+
     builder?.let { draft ->
         TemplateBuilderDialog(
             draft = draft,
@@ -151,6 +166,54 @@ fun CoachScreen(
 
     ScreenColumn {
         ScreenTitle("Coach")
+
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Weekly plan", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Your week at a glance — a suggestion you can change, not a prescription. " +
+                        "Skipping is a choice, not a failure.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                val plan = coach.currentPlan
+                if (plan == null) {
+                    Text(
+                        "No plan yet for this week.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    plan.plannedSessions.sortedBy { it.localDate }.forEach { session ->
+                        PlanSessionRow(
+                            session = session,
+                            onStart = { onStartPlannedSession(plan.id, session.id) },
+                            onToggleSkip = {
+                                onPlanSessionStatus(
+                                    plan.id, session.id,
+                                    if (session.status == PlannedSession.Status.SKIPPED) {
+                                        PlannedSession.Status.PLANNED
+                                    } else {
+                                        PlannedSession.Status.SKIPPED
+                                    },
+                                )
+                            },
+                        )
+                    }
+                    if (plan.plannedSessions.isEmpty()) {
+                        Text(
+                            "This week has no planned sessions.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                OutlinedButton(
+                    onClick = onGenerateWeek,
+                    enabled = coach.ownerAvailable && !coach.loading,
+                ) { Text(if (plan == null) "Generate week" else "Re-generate week") }
+            }
+        }
 
         InfoCard(
             title = "Exercise library",
@@ -600,3 +663,82 @@ private fun formatKm(meters: Double): String =
 
 private fun localDate(instant: Instant): String =
     instant.toLocalDateTime(TimeZone.currentSystemDefault()).date.toString()
+
+@Composable
+private fun PlanSessionRow(
+    session: PlannedSession,
+    onStart: () -> Unit,
+    onToggleSkip: () -> Unit,
+) {
+    val weekday = runCatching {
+        java.time.LocalDate.parse(session.localDate).dayOfWeek.name
+            .lowercase().replaceFirstChar { it.uppercase() }
+    }.getOrDefault(session.localDate)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text("$weekday ${session.localDate}", style = MaterialTheme.typography.bodyLarge)
+            Text(
+                buildString {
+                    append(session.category.replace('_', ' '))
+                    session.location?.let { append(" · ${it.name.lowercase()}") }
+                    append(" · ${session.status.name.lowercase()}")
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Row {
+            if (session.status == PlannedSession.Status.PLANNED) {
+                TextButton(onClick = onStart) { Text("Start") }
+            }
+            if (session.status != PlannedSession.Status.COMPLETED) {
+                TextButton(onClick = onToggleSkip) {
+                    Text(if (session.status == PlannedSession.Status.SKIPPED) "Unskip" else "Skip")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlanReviewDialog(
+    suggestion: TrainingPlan,
+    onAccept: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Suggested week") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "Generated by ${suggestion.generatedBy} for the week of " +
+                        "${suggestion.weekStartDate}. It is a suggestion you can change, " +
+                        "not a prescription — edit days and categories after accepting.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                suggestion.plannedSessions.sortedBy { it.localDate }.forEach { session ->
+                    val weekday = runCatching {
+                        java.time.LocalDate.parse(session.localDate).dayOfWeek.name
+                            .lowercase().replaceFirstChar { it.uppercase() }
+                    }.getOrDefault(session.localDate)
+                    Text(
+                        "$weekday ${session.localDate} — ${session.category.replace('_', ' ')}",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+                if (suggestion.plannedSessions.isEmpty()) {
+                    Text("No sessions suggested.", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onAccept) { Text("Accept") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Dismiss") } },
+    )
+}

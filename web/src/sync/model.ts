@@ -8,6 +8,7 @@
 export const ENTITY_TYPES = {
   WORKOUT_SESSION: "workout_session",
   WORKOUT_TEMPLATE: "workout_template",
+  TRAINING_PLAN: "training_plan",
   GYM_VISIT: "gym_visit",
   FASTING_SESSION: "fasting_session",
   FASTING_SCHEDULE: "fasting_schedule",
@@ -63,6 +64,28 @@ export interface WorkoutTemplate {
   name: string;
   exercises: TemplateExercise[];
   category: string;
+  revision?: number;
+  [key: string]: unknown;
+}
+
+export interface PlannedSession {
+  id: string;
+  ownerUID: string;
+  localDate: string;
+  templateId?: string | null;
+  category: string;
+  location?: string | null; // GYM | HOME | OUTDOOR
+  status?: string; // PLANNED | COMPLETED | SKIPPED
+  revision?: number;
+  [key: string]: unknown;
+}
+
+export interface TrainingPlan {
+  id: string;
+  ownerUID: string;
+  weekStartDate: string; // ISO local date, Monday
+  plannedSessions: PlannedSession[];
+  generatedBy: string;
   revision?: number;
   [key: string]: unknown;
 }

@@ -63,6 +63,7 @@ class NobelleApplication : Application() {
                 NobelleDatabase.MIGRATION_3_4,
                 NobelleDatabase.MIGRATION_4_5,
                 NobelleDatabase.MIGRATION_5_6,
+                NobelleDatabase.MIGRATION_6_7,
             )
             .build()
     }

@@ -12,6 +12,7 @@ import type {
   HealthObservation,
   OutdoorSession,
   SyncEvent,
+  TrainingPlan,
   WatchWorkoutPayload,
   WorkoutSessionPayload,
   WorkoutTemplate,
@@ -48,6 +49,7 @@ export interface RestoreProgress {
 export interface DashboardSnapshot {
   workouts: Map<string, WorkoutSessionPayload>;
   workoutTemplates: Map<string, WorkoutTemplate>;
+  trainingPlans: Map<string, TrainingPlan>;
   watchWorkouts: Map<string, WatchWorkoutPayload>;
   outdoorSessions: Map<string, OutdoorSession>;
   gymVisits: Map<string, GymVisit>;
@@ -130,6 +132,18 @@ function decodePayload(event: SyncEvent): DecodedPayload {
             !Number.isInteger(exercise.sets) || exercise.sets <= 0)) return { ok: false };
       return { ok: true, value: template };
     }
+    case ENTITY_TYPES.TRAINING_PLAN: {
+      const plan = parsed as TrainingPlan;
+      if (plan.id !== event.entityId || plan.ownerUID !== event.accountNamespace ||
+          typeof plan.weekStartDate !== "string" ||
+          !Array.isArray(plan.plannedSessions) ||
+          (plan.revision ?? 1) !== event.revision ||
+          plan.plannedSessions.some((session) => !session ||
+            session.ownerUID !== event.accountNamespace ||
+            typeof session.localDate !== "string" ||
+            typeof session.category !== "string")) return { ok: false };
+      return { ok: true, value: plan };
+    }
     case ENTITY_TYPES.GYM_VISIT:
     case ENTITY_TYPES.FASTING_SESSION:
     case ENTITY_TYPES.FASTING_SCHEDULE:
@@ -176,7 +190,10 @@ function applyEvent(event: SyncEvent, counters: RestoreProgress): boolean {
   }
   const incoming = { utcMs: utcMillis(event.utc), revision: event.revision };
   const existing = records.get(key);
-  const newer = event.entityType === ENTITY_TYPES.WORKOUT_TEMPLATE && existing
+  const revisionFirst =
+    event.entityType === ENTITY_TYPES.WORKOUT_TEMPLATE ||
+    event.entityType === ENTITY_TYPES.TRAINING_PLAN;
+  const newer = revisionFirst && existing
     ? incoming.revision >= existing.revision
     : !existing || isNewer(incoming, existing);
   if (newer) {
@@ -197,6 +214,7 @@ function buildSnapshot(counters: RestoreProgress): DashboardSnapshot {
   const snapshot: DashboardSnapshot = {
     workouts: new Map(),
     workoutTemplates: new Map(),
+    trainingPlans: new Map(),
     watchWorkouts: new Map(),
     outdoorSessions: new Map(),
     gymVisits: new Map(),
@@ -214,6 +232,9 @@ function buildSnapshot(counters: RestoreProgress): DashboardSnapshot {
     switch (record.entityType) {
       case ENTITY_TYPES.WORKOUT_TEMPLATE:
         snapshot.workoutTemplates.set(record.entityId, record.value as WorkoutTemplate);
+        break;
+      case ENTITY_TYPES.TRAINING_PLAN:
+        snapshot.trainingPlans.set(record.entityId, record.value as TrainingPlan);
         break;
       case ENTITY_TYPES.WORKOUT_SESSION:
         snapshot.workouts.set(record.entityId, record.value as WorkoutSessionPayload);

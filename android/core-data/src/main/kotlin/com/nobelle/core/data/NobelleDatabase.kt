@@ -18,10 +18,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         WatchWorkoutEntity::class,
         OutdoorSessionEntity::class,
         WorkoutTemplateEntity::class,
+        TrainingPlanEntity::class,
         SyncOutboxEntity::class,
         TombstoneEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 abstract class NobelleDatabase : RoomDatabase() {
@@ -35,6 +36,7 @@ abstract class NobelleDatabase : RoomDatabase() {
     abstract fun watchWorkouts(): WatchWorkoutDao
     abstract fun outdoorSessions(): OutdoorSessionDao
     abstract fun workoutTemplates(): WorkoutTemplateDao
+    abstract fun trainingPlans(): TrainingPlanDao
     abstract fun tombstones(): TombstoneDao
 
     companion object {
@@ -187,6 +189,23 @@ abstract class NobelleDatabase : RoomDatabase() {
                         "`ownerUID` TEXT NOT NULL, `id` TEXT NOT NULL, `name` TEXT NOT NULL, " +
                         "`category` TEXT NOT NULL, `payloadJson` TEXT NOT NULL, `revision` INTEGER NOT NULL, " +
                         "PRIMARY KEY(`ownerUID`, `id`))"
+                )
+            }
+        }
+
+        /** v6 -> v7: owner-scoped weekly training plans; additive only. */
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `training_plans` (" +
+                        "`ownerUID` TEXT NOT NULL, `id` TEXT NOT NULL, `weekStartDate` TEXT NOT NULL, " +
+                        "`sessionCount` INTEGER NOT NULL, `generatedBy` TEXT NOT NULL, " +
+                        "`payloadJson` TEXT NOT NULL, `revision` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`ownerUID`, `id`))"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_training_plans_ownerUID_weekStartDate` " +
+                        "ON `training_plans` (`ownerUID`, `weekStartDate`)"
                 )
             }
         }

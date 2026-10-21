@@ -9,9 +9,13 @@ import com.nobelle.core.data.GymVisitDao
 import com.nobelle.core.data.GymVisitEntity
 import com.nobelle.core.data.HealthObservationDao
 import com.nobelle.core.data.HealthObservationEntity
+import com.nobelle.core.data.TrainingPlanDao
+import com.nobelle.core.data.TrainingPlanEntity
 import com.nobelle.core.data.WorkoutTemplateDao
 import com.nobelle.core.data.WorkoutTemplateEntity
+import com.nobelle.core.data.repository.TrainingPlanRepository
 import com.nobelle.core.data.repository.WorkoutTemplateRepository
+import com.nobelle.core.model.TrainingPlan
 import com.nobelle.core.model.WorkoutTemplate
 import com.nobelle.core.data.NobelleDatabase
 import com.nobelle.core.data.OutboxDao
@@ -63,6 +67,7 @@ interface RemoteApplyStore {
     fun watchWorkouts(): WatchWorkoutDao
     fun outdoorSessions(): OutdoorSessionDao
     fun workoutTemplates(): WorkoutTemplateDao
+    fun trainingPlans(): TrainingPlanDao
     fun tombstones(): TombstoneDao
     suspend fun <T> inTransaction(block: suspend () -> T): T
 }
@@ -239,6 +244,20 @@ class RemoteEventApplier(
                     payloadJson = json.encodeToString(WorkoutTemplate.serializer(), template), revision = template.revision,
                 ))
             }
+            TrainingPlanRepository.ENTITY_TYPE -> {
+                val plan = json.decodeFromString(TrainingPlan.serializer(), event.payloadJson)
+                if (plan.id != event.entityId || plan.ownerUID != ownerUid ||
+                    plan.revision != event.revision ||
+                    plan.plannedSessions.any { it.ownerUID != ownerUid }) return false
+                val existing = store.trainingPlans().byId(ownerUid, plan.id)
+                if (existing != null && existing.revision > plan.revision) return true
+                store.trainingPlans().upsert(TrainingPlanEntity(
+                    ownerUID = ownerUid, id = plan.id, weekStartDate = plan.weekStartDate,
+                    sessionCount = plan.plannedSessions.size, generatedBy = plan.generatedBy,
+                    payloadJson = json.encodeToString(TrainingPlan.serializer(), plan),
+                    revision = plan.revision,
+                ))
+            }
             OutdoorSessionRepository.ENTITY_TYPE -> {
                 val session = json.decodeFromString(OutdoorSession.serializer(), event.payloadJson)
                 if (session.id != event.entityId || session.ownerUID != ownerUid) return false
@@ -300,6 +319,7 @@ class RemoteEventApplier(
             HealthObservationRepository.ENTITY_TYPE,
             OutdoorSessionRepository.ENTITY_TYPE,
             WorkoutTemplateRepository.ENTITY_TYPE,
+            TrainingPlanRepository.ENTITY_TYPE,
             SyncPaths.ENTITY_TYPE_WATCH_WORKOUT -> true
             else -> false
         }
@@ -330,6 +350,8 @@ class RemoteEventApplier(
                 store.outdoorSessions().hardDelete(ownerUid, event.entityId)
             WorkoutTemplateRepository.ENTITY_TYPE ->
                 store.workoutTemplates().hardDelete(ownerUid, event.entityId)
+            TrainingPlanRepository.ENTITY_TYPE ->
+                store.trainingPlans().hardDelete(ownerUid, event.entityId)
             SyncPaths.ENTITY_TYPE_WATCH_WORKOUT ->
                 store.watchWorkouts().hardDelete(ownerUid, event.entityId)
         }
@@ -354,6 +376,7 @@ private class RoomRemoteApplyStore(private val database: NobelleDatabase) : Remo
     override fun watchWorkouts() = database.watchWorkouts()
     override fun outdoorSessions() = database.outdoorSessions()
     override fun workoutTemplates() = database.workoutTemplates()
+    override fun trainingPlans() = database.trainingPlans()
     override fun tombstones() = database.tombstones()
     override suspend fun <T> inTransaction(block: suspend () -> T): T =
         database.withTransaction(block)

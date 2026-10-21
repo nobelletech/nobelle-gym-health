@@ -180,6 +180,24 @@ interface WorkoutTemplateDao {
 }
 
 @Dao
+interface TrainingPlanDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(plan: TrainingPlanEntity)
+
+    @Query("SELECT * FROM training_plans WHERE ownerUID = :ownerUID AND id = :id")
+    suspend fun byId(ownerUID: String, id: String): TrainingPlanEntity?
+
+    @Query("SELECT * FROM training_plans WHERE ownerUID = :ownerUID ORDER BY weekStartDate DESC, id")
+    suspend fun list(ownerUID: String): List<TrainingPlanEntity>
+
+    @Query("SELECT * FROM training_plans WHERE ownerUID = :ownerUID AND weekStartDate = :weekStartDate ORDER BY id")
+    suspend fun byWeek(ownerUID: String, weekStartDate: String): List<TrainingPlanEntity>
+
+    @Query("DELETE FROM training_plans WHERE ownerUID = :ownerUID AND id = :id")
+    suspend fun hardDelete(ownerUID: String, id: String)
+}
+
+@Dao
 interface TombstoneDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(t: TombstoneEntity)

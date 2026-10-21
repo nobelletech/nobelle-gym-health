@@ -141,6 +141,14 @@ class MainActivity : ComponentActivity() {
                         // picks up the prefilled active session.
                         workoutModel.selectOwner(driveAuthModel.ownerId.value)
                     },
+                    onGenerateWeek = coachModel::generateWeek,
+                    onAcceptPlan = coachModel::acceptSuggestion,
+                    onDismissPlanSuggestion = coachModel::dismissSuggestion,
+                    onPlanSessionStatus = coachModel::setPlannedStatus,
+                    onStartPlannedSession = { planId, sessionId ->
+                        coachModel.startPlannedSession(planId, sessionId)
+                        workoutModel.selectOwner(driveAuthModel.ownerId.value)
+                    },
                     // Re-running each ViewModel's owner-selection path is the
                     // existing reload: same owner keeps state, stores re-read.
                     onProgressRefresh = {
@@ -149,6 +157,7 @@ class MainActivity : ComponentActivity() {
                         gymVisitModel.selectOwner(owner)
                         fastingModel.selectOwner(owner)
                         healthConnectModel.selectOwner(owner)
+                        coachModel.selectOwner(owner)
                     },
                 )
             }
