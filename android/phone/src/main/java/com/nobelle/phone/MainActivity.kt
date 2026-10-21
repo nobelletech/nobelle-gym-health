@@ -20,6 +20,7 @@ import com.nobelle.phone.fasting.FastingViewModel
 import com.nobelle.phone.gym.GymVisitViewModel
 import com.nobelle.phone.health.HealthConnectController
 import com.nobelle.phone.health.HealthConnectViewModel
+import com.nobelle.phone.coach.CoachViewModel
 import com.nobelle.phone.outdoor.OutdoorViewModel
 import com.nobelle.phone.ui.NobelleApp
 import com.nobelle.phone.ui.NobelleTheme
@@ -35,6 +36,7 @@ class MainActivity : ComponentActivity() {
     private val healthConnectModel by viewModels<HealthConnectViewModel>()
     private val watchEnrollModel by viewModels<WatchEnrollViewModel>()
     private val outdoorModel by viewModels<OutdoorViewModel>()
+    private val coachModel by viewModels<CoachViewModel>()
     private lateinit var driveAuthorization: DriveAuthorizationController
     private lateinit var healthConnect: HealthConnectController
     private val healthRationaleRequested = mutableStateOf(false)
@@ -54,6 +56,7 @@ class MainActivity : ComponentActivity() {
             val healthConnectState by healthConnectModel.state.collectAsStateWithLifecycle()
             val watchEnrollState by watchEnrollModel.state.collectAsStateWithLifecycle()
             val outdoorState by outdoorModel.state.collectAsStateWithLifecycle()
+            val coachState by coachModel.state.collectAsStateWithLifecycle()
             val showHealthRationale by healthRationaleRequested
             LaunchedEffect(ownerId?.uid) {
                 workoutModel.selectOwner(ownerId)
@@ -62,6 +65,7 @@ class MainActivity : ComponentActivity() {
                 healthConnectModel.selectOwner(ownerId)
                 watchEnrollModel.selectOwner(ownerId)
                 outdoorModel.selectOwner(ownerId)
+                coachModel.selectOwner(ownerId)
             }
             NobelleTheme {
                 NobelleApp(
@@ -123,9 +127,20 @@ class MainActivity : ComponentActivity() {
                     showHealthRationale = showHealthRationale,
                     onDismissHealthRationale = { healthRationaleRequested.value = false },
                     outdoor = outdoorState,
+                    coach = coachState,
                     onStartOutdoor = outdoorModel::start,
                     onStopOutdoor = outdoorModel::stop,
                     onDeleteOutdoor = outdoorModel::deleteSession,
+                    onSaveTemplate = { id, name, category, exercises ->
+                        coachModel.saveTemplate(id, name, category, exercises)
+                    },
+                    onDeleteTemplate = coachModel::deleteTemplate,
+                    onStartTemplate = { id ->
+                        coachModel.startTemplate(id)
+                        // Reuse the owner-selection reload so the Today tab
+                        // picks up the prefilled active session.
+                        workoutModel.selectOwner(driveAuthModel.ownerId.value)
+                    },
                     // Re-running each ViewModel's owner-selection path is the
                     // existing reload: same owner keeps state, stores re-read.
                     onProgressRefresh = {

@@ -22,6 +22,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.nobelle.core.health.HealthConnectCategory
+import com.nobelle.core.model.TemplateExercise
+import com.nobelle.phone.coach.CoachViewModel
 import com.nobelle.phone.fasting.FastingBackdateInput
 import com.nobelle.phone.fasting.FastingViewModel
 import com.nobelle.phone.gym.GymVisitInput
@@ -91,9 +93,13 @@ fun NobelleApp(
     showHealthRationale: Boolean,
     onDismissHealthRationale: () -> Unit,
     outdoor: OutdoorViewModel.OutdoorUiState,
+    coach: CoachViewModel.CoachUiState,
     onStartOutdoor: (String) -> Unit,
     onStopOutdoor: () -> Unit,
     onDeleteOutdoor: (String) -> Unit,
+    onSaveTemplate: (id: String?, name: String, category: String, exercises: List<TemplateExercise>) -> Unit,
+    onDeleteTemplate: (String) -> Unit,
+    onStartTemplate: (String) -> Unit,
     onProgressRefresh: () -> Unit,
 ) {
     val nav = rememberNavController()
@@ -148,9 +154,13 @@ fun NobelleApp(
             composable(Destination.COACH.route) {
                 CoachScreen(
                     outdoor = outdoor,
+                    coach = coach,
                     onStartOutdoor = onStartOutdoor,
                     onStopOutdoor = onStopOutdoor,
                     onDeleteOutdoor = onDeleteOutdoor,
+                    onSaveTemplate = onSaveTemplate,
+                    onDeleteTemplate = onDeleteTemplate,
+                    onStartTemplate = onStartTemplate,
                 )
             }
             composable(Destination.HEALTH.route) {

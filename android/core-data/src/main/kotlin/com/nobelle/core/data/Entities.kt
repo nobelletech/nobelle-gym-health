@@ -168,6 +168,16 @@ data class SyncOutboxEntity(
     val payloadJson: String,
 )
 
+@Entity(tableName = "workout_templates", primaryKeys = ["ownerUID", "id"])
+data class WorkoutTemplateEntity(
+    val ownerUID: String,
+    val id: String,
+    val name: String,
+    val category: String,
+    val payloadJson: String,
+    val revision: Long,
+)
+
 @Entity(
     tableName = "deletion_tombstones",
     primaryKeys = ["ownerUID", "entityType", "entityId"],

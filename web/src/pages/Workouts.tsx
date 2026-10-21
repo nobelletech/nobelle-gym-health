@@ -47,6 +47,15 @@ export default function Workouts() {
   }
   return <>
     <h1>Workout history</h1>
+    <section className="card">
+      <h2>Templates</h2>
+      <p>Templates are prefill aids, not logged workouts. Create and start them on your phone.</p>
+      {!snapshot?.workoutTemplates.size ? <p>No restored templates.</p> : <div className="table-scroll"><table>
+        <thead><tr><th>Name</th><th>Exercises</th><th>Category</th></tr></thead>
+        <tbody>{[...snapshot.workoutTemplates.values()].sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id)).map((template) =>
+          <tr key={template.id}><td>{template.name}</td><td>{template.exercises.length}</td><td>{template.category}</td></tr>)}</tbody>
+      </table></div>}
+    </section>
     <div className="card"><p>ISO weeks run Monday–Sunday in your browser’s local timezone. Completed workouts use their end date (start date if no end is recorded); watch and outdoor sessions use their start date. Sources are shown separately, not deduplicated.</p></div>
     {!entries.length && <div className="card"><p>No workout data. Restore from Drive on Connections.</p></div>}
     {[...weeks].sort(([a], [b]) => b.localeCompare(a)).map(([week, items]) => <section className="card" key={week}>

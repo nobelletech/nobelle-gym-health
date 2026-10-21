@@ -17,10 +17,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         HealthObservationEntity::class,
         WatchWorkoutEntity::class,
         OutdoorSessionEntity::class,
+        WorkoutTemplateEntity::class,
         SyncOutboxEntity::class,
         TombstoneEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 abstract class NobelleDatabase : RoomDatabase() {
@@ -33,6 +34,7 @@ abstract class NobelleDatabase : RoomDatabase() {
     abstract fun healthObservations(): HealthObservationDao
     abstract fun watchWorkouts(): WatchWorkoutDao
     abstract fun outdoorSessions(): OutdoorSessionDao
+    abstract fun workoutTemplates(): WorkoutTemplateDao
     abstract fun tombstones(): TombstoneDao
 
     companion object {
@@ -173,6 +175,18 @@ abstract class NobelleDatabase : RoomDatabase() {
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS `index_outdoor_sessions_ownerUID_startedUtc` " +
                         "ON `outdoor_sessions` (`ownerUID`, `startedUtc`)"
+                )
+            }
+        }
+
+        /** v5 -> v6: owner-scoped user workout templates; additive only. */
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `workout_templates` (" +
+                        "`ownerUID` TEXT NOT NULL, `id` TEXT NOT NULL, `name` TEXT NOT NULL, " +
+                        "`category` TEXT NOT NULL, `payloadJson` TEXT NOT NULL, `revision` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`ownerUID`, `id`))"
                 )
             }
         }

@@ -247,6 +247,27 @@ class MigrationTest {
         db.close()
     }
 
+    @Test
+    fun migrate5To6() {
+        helper.createDatabase(TEST_DB, 5).apply {
+            execSQL("INSERT INTO sync_outbox (operationUuid, ownerUID, entityId, entityType, state, attempts, lastError, createdUtc, payloadJson) VALUES ('op-6', 'owner-a', 't1', 'workout_template', 'PENDING', 0, NULL, 1700000000000, '{}')")
+            close()
+        }
+        val db = helper.runMigrationsAndValidate(TEST_DB, 6, true, NobelleDatabase.MIGRATION_5_6)
+        db.query("SELECT state FROM sync_outbox WHERE operationUuid = 'op-6'").use {
+            assertTrue(it.moveToFirst())
+            assertEquals("PENDING", it.getString(0))
+        }
+        for (owner in listOf("owner-a", "owner-b")) {
+            db.execSQL("INSERT INTO workout_templates (ownerUID, id, name, category, payloadJson, revision) VALUES (?, 't1', 'Upper', 'Strength', '{}', 1)", arrayOf(owner))
+        }
+        db.query("SELECT COUNT(*) FROM workout_templates WHERE id = 't1'").use {
+            assertTrue(it.moveToFirst())
+            assertEquals(2, it.getInt(0))
+        }
+        db.close()
+    }
+
     private companion object {
         const val TEST_DB = "migration-test"
     }

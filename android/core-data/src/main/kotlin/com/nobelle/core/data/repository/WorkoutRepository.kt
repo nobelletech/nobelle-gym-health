@@ -9,6 +9,7 @@ import com.nobelle.core.model.OwnerId
 import com.nobelle.core.model.SetType
 import com.nobelle.core.model.SyncEvent
 import com.nobelle.core.model.WatchWorkoutPayload
+import com.nobelle.core.model.WorkoutTemplate
 import com.nobelle.core.model.WorkoutSession
 import com.nobelle.core.model.WorkoutState
 import java.util.UUID
@@ -37,6 +38,7 @@ class WorkoutRepository(
         originDeviceId: String,
         startTimeZone: String,
         sourceOffsetMinutes: Int,
+        templateId: String? = null,
     ): WorkoutSession = database.withTransaction {
         if (database.sessions().activeSession(owner.uid) != null) {
             throw IllegalStateException("An active or paused workout already exists for this owner")
@@ -44,6 +46,7 @@ class WorkoutRepository(
         val session = WorkoutSession(
             id = newId(),
             ownerUID = owner.uid,
+            templateId = templateId,
             category = category,
             state = WorkoutState.ACTIVE,
             startedUtc = now(),
@@ -55,6 +58,43 @@ class WorkoutRepository(
             revision = 1,
         )
         database.sessions().upsert(session.toEntity())
+        session
+    }
+
+    /**
+     * Starts an ACTIVE session prefilled from a template — a logging aid, not
+     * auto-logging: reps, load and duration stay null for the user to enter
+     * (§8C). Only the rest target carries over so the prefilled set rows keep
+     * the intended recovery context. Same persistence path as [start]: the
+     * journey stays local until [finish] enqueues the sync event.
+     */
+    suspend fun startFromTemplate(
+        owner: OwnerId,
+        template: WorkoutTemplate,
+        originDeviceId: String,
+        startTimeZone: String,
+        sourceOffsetMinutes: Int,
+    ): WorkoutSession = database.withTransaction {
+        require(template.ownerUID == owner.uid) { "Template does not belong to the requested owner" }
+        val session = start(
+            owner, template.category, originDeviceId, startTimeZone,
+            sourceOffsetMinutes, templateId = template.id,
+        )
+        var index = 0
+        template.exercises.forEach { exercise ->
+            repeat(exercise.sets) {
+                val set = ExerciseSet(
+                    id = newId(),
+                    sessionId = session.id,
+                    exerciseId = exercise.exerciseId,
+                    setIndex = index++,
+                    restSec = exercise.restSec,
+                    notes = exercise.notes,
+                    revision = 1,
+                )
+                database.workoutSets().upsert(set.toEntity(owner.uid))
+            }
+        }
         session
     }
 

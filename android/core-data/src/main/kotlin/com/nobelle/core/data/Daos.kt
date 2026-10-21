@@ -165,6 +165,21 @@ interface OutdoorSessionDao {
 }
 
 @Dao
+interface WorkoutTemplateDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(template: WorkoutTemplateEntity)
+
+    @Query("SELECT * FROM workout_templates WHERE ownerUID = :ownerUID AND id = :id")
+    suspend fun byId(ownerUID: String, id: String): WorkoutTemplateEntity?
+
+    @Query("SELECT * FROM workout_templates WHERE ownerUID = :ownerUID ORDER BY name, id")
+    suspend fun list(ownerUID: String): List<WorkoutTemplateEntity>
+
+    @Query("DELETE FROM workout_templates WHERE ownerUID = :ownerUID AND id = :id")
+    suspend fun hardDelete(ownerUID: String, id: String)
+}
+
+@Dao
 interface TombstoneDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(t: TombstoneEntity)

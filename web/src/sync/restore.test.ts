@@ -81,6 +81,22 @@ describe("operationUuidFromFilename", () => {
 });
 
 describe("restoreFromDrive", () => {
+  it("restores templates by revision and prevents resurrection after delete", async () => {
+    const template = { id: "t1", ownerUID: OWNER, name: "Upper", category: "Strength", exercises: [{ exerciseId: "push-up", sets: 3, reps: 8 }], revision: 3 };
+    const events = [
+      syncEvent({ entityType: "workout_template", entityId: "t1", operationUuid: "new", revision: 3, payloadJson: JSON.stringify(template) }),
+      syncEvent({ entityType: "workout_template", entityId: "t1", operationUuid: "stale", revision: 2, utc: "2024-01-02T00:00:00Z", payloadJson: JSON.stringify({ ...template, name: "Stale", revision: 2 }) }),
+    ].map((event) => eventFile(event));
+    const restore = (files: typeof events) => restoreFromDrive(fakeDrive([{ files: files.map((entry) => entry.file) }], new Map(files.map((entry) => [entry.file.id, entry.body]))).client);
+    expect((await restore(events)).workoutTemplates.get("t1")?.name).toBe("Upper");
+    const deleted = eventFile(syncEvent({ entityType: "workout_template", entityId: "t1", operationUuid: "delete", op: "DELETE", revision: 4 }));
+    expect((await restore([deleted])).workoutTemplates.size).toBe(0);
+    const resurrect = eventFile(syncEvent({ entityType: "workout_template", entityId: "t1", operationUuid: "resurrect", revision: 5, payloadJson: JSON.stringify({ ...template, revision: 5 }) }));
+    const snapshot = await restore([resurrect]);
+    expect(snapshot.workoutTemplates.size).toBe(0);
+    expect(snapshot.tombstones.has(tombstoneKey("workout_template", "t1"))).toBe(true);
+  });
+
   it("pages through the whole file list and applies every event", async () => {
     const a = eventFile(syncEvent({ entityId: "v1", operationUuid: "op-a", payloadJson: gymVisit("v1") }));
     const b = eventFile(syncEvent({ entityId: "v2", operationUuid: "op-b", payloadJson: gymVisit("v2") }));

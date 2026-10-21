@@ -7,6 +7,7 @@
 
 export const ENTITY_TYPES = {
   WORKOUT_SESSION: "workout_session",
+  WORKOUT_TEMPLATE: "workout_template",
   GYM_VISIT: "gym_visit",
   FASTING_SESSION: "fasting_session",
   FASTING_SCHEDULE: "fasting_schedule",
@@ -43,6 +44,26 @@ export interface SourceKey {
   sourceRecordId: string;
   originDevice?: string | null;
   importRoute?: string | null;
+  [key: string]: unknown;
+}
+
+export interface TemplateExercise {
+  exerciseId: string;
+  sets: number;
+  reps?: number | null;
+  durationSec?: number | null;
+  restSec?: number;
+  notes?: string | null;
+  [key: string]: unknown;
+}
+
+export interface WorkoutTemplate {
+  id: string;
+  ownerUID: string;
+  name: string;
+  exercises: TemplateExercise[];
+  category: string;
+  revision?: number;
   [key: string]: unknown;
 }
 

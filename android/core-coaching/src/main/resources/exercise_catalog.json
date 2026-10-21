@@ -1,0 +1,765 @@
+[
+  {
+    "id": "barbell-bench-press",
+    "name": "Barbell Bench Press",
+    "muscleGroups": ["chest", "triceps", "front delts"],
+    "equipment": "FULL_GYM",
+    "difficulty": "INTERMEDIATE",
+    "instructions": [
+      "Lie on the bench with eyes under the bar, feet flat on the floor.",
+      "Grip the bar slightly wider than shoulders and unrack it over your chest.",
+      "Lower the bar to your mid-chest under control.",
+      "Press the bar back up until your arms are straight."
+    ],
+    "breathingCues": ["Inhale on the way down, exhale as you press."],
+    "commonMistakes": ["Bouncing the bar off the chest.", "Letting the wrists bend backward."],
+    "easierAlternativeId": "machine-chest-press",
+    "harderAlternativeId": null,
+    "contraindicationNotes": "Stop if you feel sharp shoulder pain.",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "machine-chest-press",
+    "name": "Machine Chest Press",
+    "muscleGroups": ["chest", "triceps"],
+    "equipment": "FULL_GYM",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Adjust the seat so the handles sit at mid-chest height.",
+      "Grip the handles and keep your back flat against the pad.",
+      "Press the handles forward until your arms are nearly straight.",
+      "Return slowly without letting the weight stack touch down."
+    ],
+    "commonMistakes": ["Setting the seat too low or high.", "Locking the elbows hard at the top."],
+    "harderAlternativeId": "barbell-bench-press",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "dumbbell-bench-press",
+    "name": "Dumbbell Bench Press",
+    "muscleGroups": ["chest", "triceps"],
+    "equipment": "DUMBBELLS",
+    "difficulty": "INTERMEDIATE",
+    "instructions": [
+      "Sit on the bench with a dumbbell on each thigh.",
+      "Lie back and kick the dumbbells up to chest level.",
+      "Press both dumbbells up until your arms are straight.",
+      "Lower under control to chest level and repeat."
+    ],
+    "commonMistakes": ["Letting the dumbbells drift apart at the top.", "Flaring the elbows to 90 degrees."],
+    "easierAlternativeId": "machine-chest-press",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "incline-dumbbell-press",
+    "name": "Incline Dumbbell Press",
+    "muscleGroups": ["upper chest", "front delts", "triceps"],
+    "equipment": "DUMBBELLS",
+    "difficulty": "INTERMEDIATE",
+    "instructions": [
+      "Set the bench to a 30–45 degree incline.",
+      "Lie back with dumbbells at shoulder height, palms forward.",
+      "Press up until arms are straight without clashing the dumbbells.",
+      "Lower slowly back to shoulder level."
+    ],
+    "commonMistakes": ["Using too steep an incline, shifting load to shoulders.", "Arching the lower back off the pad."],
+    "easierAlternativeId": "dumbbell-bench-press",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "push-up",
+    "name": "Push-Up",
+    "muscleGroups": ["chest", "triceps", "core"],
+    "equipment": "BODYWEIGHT",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Start in a plank with hands under your shoulders and body in a straight line.",
+      "Lower your chest toward the floor, elbows about 45 degrees from your body.",
+      "Push back up to the starting position without letting hips sag."
+    ],
+    "breathingCues": ["Inhale down, exhale as you push."],
+    "commonMistakes": ["Letting the hips sag or pike.", "Partial range of motion."],
+    "easierAlternativeId": "knee-push-up",
+    "harderAlternativeId": "dumbbell-bench-press",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "knee-push-up",
+    "name": "Knee Push-Up",
+    "muscleGroups": ["chest", "triceps"],
+    "equipment": "BODYWEIGHT",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Kneel on the floor, hands under shoulders, body straight from head to knees.",
+      "Lower your chest toward the floor with control.",
+      "Push back up keeping that straight line."
+    ],
+    "commonMistakes": ["Bending at the hips instead of staying straight.", "Dropping the head forward."],
+    "harderAlternativeId": "push-up",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "dumbbell-chest-fly",
+    "name": "Dumbbell Chest Fly",
+    "muscleGroups": ["chest"],
+    "equipment": "DUMBBELLS",
+    "difficulty": "INTERMEDIATE",
+    "instructions": [
+      "Lie on a flat bench with dumbbells held above your chest, palms facing.",
+      "With a slight bend in the elbows, open your arms out to the sides.",
+      "Lower until you feel a stretch across your chest.",
+      "Bring the dumbbells back together over your chest."
+    ],
+    "commonMistakes": ["Bending the elbows too much, turning it into a press.", "Going too deep and straining the shoulders."],
+    "easierAlternativeId": "machine-chest-press",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "conventional-deadlift",
+    "name": "Conventional Deadlift",
+    "muscleGroups": ["back", "glutes", "hamstrings"],
+    "equipment": "FULL_GYM",
+    "difficulty": "ADVANCED",
+    "instructions": [
+      "Stand with feet hip-width, bar over the middle of your feet.",
+      "Hinge down and grip the bar just outside your knees.",
+      "Flatten your back, pull the slack out, and brace.",
+      "Push the floor away and stand tall, keeping the bar close.",
+      "Hinge the bar back down under control."
+    ],
+    "breathingCues": ["Brace before each rep; exhale at the top."],
+    "commonMistakes": ["Rounding the lower back.", "Pulling with the arms before the hips rise."],
+    "easierAlternativeId": "romanian-deadlift",
+    "contraindicationNotes": "Learn the hip hinge with a light load first.",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "romanian-deadlift",
+    "name": "Romanian Deadlift",
+    "muscleGroups": ["hamstrings", "glutes", "lower back"],
+    "equipment": "FULL_GYM",
+    "difficulty": "INTERMEDIATE",
+    "instructions": [
+      "Stand holding the bar at hip level with a slight knee bend.",
+      "Push your hips back and lower the bar along your thighs.",
+      "Stop when you feel a strong hamstring stretch, back flat.",
+      "Drive your hips forward to stand back up."
+    ],
+    "commonMistakes": ["Bending the knees too much, turning it into a squat.", "Rounding the back at the bottom."],
+    "easierAlternativeId": "glute-bridge",
+    "harderAlternativeId": "conventional-deadlift",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "barbell-bent-over-row",
+    "name": "Barbell Bent-Over Row",
+    "muscleGroups": ["lats", "upper back", "biceps"],
+    "equipment": "FULL_GYM",
+    "difficulty": "INTERMEDIATE",
+    "instructions": [
+      "Hold the bar with an overhand grip, feet hip-width.",
+      "Hinge until your torso is about 45 degrees, back flat.",
+      "Pull the bar to your lower ribs, squeezing your shoulder blades.",
+      "Lower under control without standing up."
+    ],
+    "commonMistakes": ["Jerking the torso to move the weight.", "Letting the shoulders shrug toward the ears."],
+    "easierAlternativeId": "seated-cable-row",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "one-arm-dumbbell-row",
+    "name": "One-Arm Dumbbell Row",
+    "muscleGroups": ["lats", "upper back", "biceps"],
+    "equipment": "DUMBBELLS",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Place one knee and the same-side hand on a bench, back flat.",
+      "Hold the dumbbell in the free hand, arm hanging straight.",
+      "Pull the dumbbell to your hip, elbow close to your body.",
+      "Lower under control and repeat before switching sides."
+    ],
+    "commonMistakes": ["Twisting the torso to lift the weight.", "Pulling to the chest instead of the hip."],
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "lat-pulldown",
+    "name": "Lat Pulldown",
+    "muscleGroups": ["lats", "biceps", "upper back"],
+    "equipment": "FULL_GYM",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Sit with thighs secured under the pad, grip the bar wider than shoulders.",
+      "Lean back slightly and pull the bar to your upper chest.",
+      "Squeeze your shoulder blades together at the bottom.",
+      "Return the bar slowly to the start with straight arms."
+    ],
+    "breathingCues": ["Exhale as you pull, inhale as you release."],
+    "commonMistakes": ["Pulling behind the neck.", "Swinging the body for momentum."],
+    "harderAlternativeId": "assisted-pull-up",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "assisted-pull-up",
+    "name": "Assisted Pull-Up",
+    "muscleGroups": ["lats", "biceps", "upper back"],
+    "equipment": "FULL_GYM",
+    "difficulty": "INTERMEDIATE",
+    "instructions": [
+      "Set the assistance weight and kneel or stand on the platform.",
+      "Grip the bar slightly wider than shoulders.",
+      "Pull your chest to the bar without kicking.",
+      "Lower under control to straight arms."
+    ],
+    "commonMistakes": ["Using too much assistance and losing tension.", "Swinging at the bottom."],
+    "easierAlternativeId": "lat-pulldown",
+    "harderAlternativeId": "pull-up",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "pull-up",
+    "name": "Pull-Up",
+    "muscleGroups": ["lats", "biceps", "upper back"],
+    "equipment": "BODYWEIGHT",
+    "difficulty": "ADVANCED",
+    "instructions": [
+      "Hang from the bar with an overhand grip, arms straight.",
+      "Pull your chest toward the bar, driving elbows down and back.",
+      "Lower under control to a full hang."
+    ],
+    "commonMistakes": ["Kicking or kipping to finish the rep.", "Stopping short of a full hang between reps."],
+    "easierAlternativeId": "assisted-pull-up",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "seated-cable-row",
+    "name": "Seated Cable Row",
+    "muscleGroups": ["upper back", "lats", "biceps"],
+    "equipment": "FULL_GYM",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Sit tall with feet on the platform and a neutral grip on the handle.",
+      "Pull the handle to your lower ribs, squeezing the shoulder blades.",
+      "Keep your chest up and elbows close.",
+      "Extend the arms back out under control."
+    ],
+    "commonMistakes": ["Rounding the back and leaning far forward.", "Shrugging instead of rowing."],
+    "harderAlternativeId": "barbell-bent-over-row",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "band-pull-apart",
+    "name": "Band Pull-Apart",
+    "muscleGroups": ["rear delts", "upper back"],
+    "equipment": "RESISTANCE_BANDS",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Hold a band in front of your chest with straight arms, hands shoulder-width.",
+      "Pull the band apart until it touches your chest.",
+      "Squeeze the shoulder blades, then return slowly."
+    ],
+    "commonMistakes": ["Bending the elbows to cheat.", "Shrugging the shoulders."],
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "back-squat",
+    "name": "Back Squat",
+    "muscleGroups": ["quads", "glutes", "core"],
+    "equipment": "FULL_GYM",
+    "difficulty": "ADVANCED",
+    "instructions": [
+      "Set the bar on your upper back, grip it outside your shoulders.",
+      "Unrack, step back, and set feet about shoulder-width.",
+      "Brace, then sit your hips down and back until thighs are parallel.",
+      "Drive through your whole foot to stand back up."
+    ],
+    "breathingCues": ["Big breath and brace before descending; exhale at the top."],
+    "commonMistakes": ["Knees collapsing inward.", "Heels lifting off the floor."],
+    "easierAlternativeId": "goblet-squat",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "goblet-squat",
+    "name": "Goblet Squat",
+    "muscleGroups": ["quads", "glutes", "core"],
+    "equipment": "DUMBBELLS",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Hold a dumbbell vertically at your chest with both hands.",
+      "Stand with feet shoulder-width, toes slightly out.",
+      "Squat down keeping your chest up until thighs are near parallel.",
+      "Drive through your feet to stand."
+    ],
+    "commonMistakes": ["Letting the knees cave inward.", "Leaning too far forward."],
+    "easierAlternativeId": "bodyweight-squat",
+    "harderAlternativeId": "back-squat",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "bodyweight-squat",
+    "name": "Bodyweight Squat",
+    "muscleGroups": ["quads", "glutes"],
+    "equipment": "BODYWEIGHT",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Stand with feet shoulder-width, arms out in front or at your sides.",
+      "Sit your hips down and back, keeping your chest up.",
+      "Descend until thighs are near parallel, then stand back up."
+    ],
+    "commonMistakes": ["Knees collapsing inward.", "Lifting the heels."],
+    "harderAlternativeId": "goblet-squat",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "leg-press",
+    "name": "Leg Press",
+    "muscleGroups": ["quads", "glutes"],
+    "equipment": "FULL_GYM",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Sit in the machine with back and head against the pad.",
+      "Place feet shoulder-width on the platform and release the safety.",
+      "Lower the platform until your knees are about 90 degrees.",
+      "Press the platform back up without locking your knees."
+    ],
+    "commonMistakes": ["Letting the lower back round off the pad.", "Locking the knees at the top."],
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "bulgarian-split-squat",
+    "name": "Bulgarian Split Squat",
+    "muscleGroups": ["quads", "glutes", "core"],
+    "equipment": "DUMBBELLS",
+    "difficulty": "ADVANCED",
+    "instructions": [
+      "Stand a step in front of a bench, rest your rear foot on it.",
+      "Hold dumbbells at your sides and keep your torso upright.",
+      "Lower until your front thigh is near parallel.",
+      "Drive through the front foot to stand, then switch legs."
+    ],
+    "commonMistakes": ["Leaning far forward onto the front leg.", "Letting the front knee cave inward."],
+    "easierAlternativeId": "reverse-lunge",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "reverse-lunge",
+    "name": "Reverse Lunge",
+    "muscleGroups": ["quads", "glutes"],
+    "equipment": "DUMBBELLS",
+    "difficulty": "INTERMEDIATE",
+    "instructions": [
+      "Stand tall holding dumbbells at your sides.",
+      "Step one leg back and lower until both knees are near 90 degrees.",
+      "Push through the front foot to return to standing.",
+      "Alternate legs each rep."
+    ],
+    "commonMistakes": ["Stepping directly behind, losing balance.", "Pushing off the back foot."],
+    "easierAlternativeId": "goblet-squat",
+    "harderAlternativeId": "bulgarian-split-squat",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "step-up",
+    "name": "Step-Up",
+    "muscleGroups": ["quads", "glutes"],
+    "equipment": "DUMBBELLS",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Stand facing a knee-height bench holding dumbbells.",
+      "Place one foot fully on the bench.",
+      "Drive through that foot to step up, bringing the other leg along.",
+      "Step back down under control and repeat."
+    ],
+    "commonMistakes": ["Pushing off the bottom leg.", "Using a bench that is too high."],
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "leg-extension",
+    "name": "Leg Extension",
+    "muscleGroups": ["quads"],
+    "equipment": "FULL_GYM",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Sit with your back on the pad and ankles behind the roller.",
+      "Extend your knees to lift the weight until your legs are straight.",
+      "Lower under control without letting the stack touch."
+    ],
+    "commonMistakes": ["Kicking the weight up with momentum.", "Hips sliding forward off the seat."],
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "seated-leg-curl",
+    "name": "Seated Leg Curl",
+    "muscleGroups": ["hamstrings"],
+    "equipment": "FULL_GYM",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Adjust the pad to rest just above your heels and secure your thighs.",
+      "Curl your legs down as far as the machine allows.",
+      "Return slowly to the start without letting the stack touch."
+    ],
+    "commonMistakes": ["Lifting the hips off the seat.", "Using momentum instead of a controlled curl."],
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "standing-calf-raise",
+    "name": "Standing Calf Raise",
+    "muscleGroups": ["calves"],
+    "equipment": "FULL_GYM",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Stand on the machine platform with shoulders under the pads.",
+      "Let your heels drop below the platform for a stretch.",
+      "Rise onto the balls of your feet as high as possible.",
+      "Lower under control and repeat."
+    ],
+    "commonMistakes": ["Bouncing at the bottom.", "Bending the knees throughout."],
+    "easierAlternativeId": "bodyweight-calf-raise",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "bodyweight-calf-raise",
+    "name": "Bodyweight Calf Raise",
+    "muscleGroups": ["calves"],
+    "equipment": "BODYWEIGHT",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Stand tall with the balls of your feet on a step edge or flat ground.",
+      "Lower your heels for a stretch.",
+      "Rise up onto your toes as high as possible, pause, then lower."
+    ],
+    "commonMistakes": ["Rushing the reps.", "Rolling the ankles outward."],
+    "harderAlternativeId": "standing-calf-raise",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "hip-thrust",
+    "name": "Barbell Hip Thrust",
+    "muscleGroups": ["glutes", "hamstrings"],
+    "equipment": "FULL_GYM",
+    "difficulty": "INTERMEDIATE",
+    "instructions": [
+      "Rest your upper back on a bench, bar over your hips with padding.",
+      "Plant your feet so your shins are vertical at the top.",
+      "Drive your hips up until your body is straight from knees to shoulders.",
+      "Lower under control without resting the bar on the floor."
+    ],
+    "commonMistakes": ["Overarching the lower back at the top.", "Feet placed too far forward or back."],
+    "easierAlternativeId": "glute-bridge",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "glute-bridge",
+    "name": "Glute Bridge",
+    "muscleGroups": ["glutes", "hamstrings"],
+    "equipment": "BODYWEIGHT",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Lie on your back, knees bent, feet flat near your hips.",
+      "Push through your heels to lift your hips until your body is straight.",
+      "Squeeze your glutes at the top, then lower under control."
+    ],
+    "commonMistakes": ["Arching the lower back instead of squeezing the glutes.", "Pushing through the toes."],
+    "harderAlternativeId": "hip-thrust",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "overhead-press",
+    "name": "Overhead Barbell Press",
+    "muscleGroups": ["shoulders", "triceps", "core"],
+    "equipment": "FULL_GYM",
+    "difficulty": "INTERMEDIATE",
+    "instructions": [
+      "Hold the bar at shoulder height, hands just outside your shoulders.",
+      "Brace your core and squeeze your glutes.",
+      "Press the bar overhead until your arms are straight.",
+      "Lower back to shoulder height under control."
+    ],
+    "breathingCues": ["Exhale as you press, inhale on the way down."],
+    "commonMistakes": ["Leaning back and turning it into an incline press.", "Pressing the bar out in front instead of up."],
+    "easierAlternativeId": "seated-dumbbell-press",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "seated-dumbbell-press",
+    "name": "Seated Dumbbell Shoulder Press",
+    "muscleGroups": ["shoulders", "triceps"],
+    "equipment": "DUMBBELLS",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Sit on a bench with back support, dumbbells at shoulder height.",
+      "Press both dumbbells overhead until arms are nearly straight.",
+      "Lower back to shoulder height under control."
+    ],
+    "commonMistakes": ["Flaring the elbows straight out to the sides.", "Arching the back off the support."],
+    "harderAlternativeId": "overhead-press",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "lateral-raise",
+    "name": "Dumbbell Lateral Raise",
+    "muscleGroups": ["side delts"],
+    "equipment": "DUMBBELLS",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Stand tall with light dumbbells at your sides, slight elbow bend.",
+      "Raise your arms out to the sides until they reach shoulder height.",
+      "Lower under control without swinging."
+    ],
+    "commonMistakes": ["Using momentum to swing the weight up.", "Raising above shoulder height and shrugging."],
+    "easierAlternativeId": "band-pull-apart",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "rear-delt-fly",
+    "name": "Dumbbell Rear-Delt Fly",
+    "muscleGroups": ["rear delts", "upper back"],
+    "equipment": "DUMBBELLS",
+    "difficulty": "INTERMEDIATE",
+    "instructions": [
+      "Hinge forward until your torso is near parallel, dumbbells hanging.",
+      "With a slight elbow bend, raise the dumbbells out to the sides.",
+      "Squeeze your shoulder blades, then lower under control."
+    ],
+    "commonMistakes": ["Standing up to cheat the weight.", "Turning it into a row by bending the elbows."],
+    "easierAlternativeId": "band-pull-apart",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "dumbbell-shrug",
+    "name": "Dumbbell Shrug",
+    "muscleGroups": ["traps"],
+    "equipment": "DUMBBELLS",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Stand tall with heavy dumbbells at your sides.",
+      "Shrug your shoulders straight up toward your ears.",
+      "Pause at the top, then lower slowly."
+    ],
+    "commonMistakes": ["Rolling the shoulders in circles.", "Bending the arms to help."],
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "bicep-curl",
+    "name": "Dumbbell Curl",
+    "muscleGroups": ["biceps"],
+    "equipment": "DUMBBELLS",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Stand tall with dumbbells at your sides, palms forward.",
+      "Keep your elbows pinned and curl the dumbbells to shoulder height.",
+      "Lower under control to a straight arm."
+    ],
+    "commonMistakes": ["Swinging the torso to move the weight.", "Letting the elbows drift forward."],
+    "easierAlternativeId": "band-curl",
+    "harderAlternativeId": "hammer-curl",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "hammer-curl",
+    "name": "Hammer Curl",
+    "muscleGroups": ["biceps", "forearms"],
+    "equipment": "DUMBBELLS",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Stand tall with dumbbells at your sides, palms facing your body.",
+      "Curl the dumbbells up keeping that neutral grip.",
+      "Lower under control to straight arms."
+    ],
+    "commonMistakes": ["Swinging the weights.", "Rotating the wrists during the rep."],
+    "easierAlternativeId": "bicep-curl",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "band-curl",
+    "name": "Band Curl",
+    "muscleGroups": ["biceps"],
+    "equipment": "RESISTANCE_BANDS",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Stand on the middle of a band, holding the ends with palms forward.",
+      "Curl your hands to shoulder height, elbows pinned.",
+      "Lower slowly against the band tension."
+    ],
+    "commonMistakes": ["Stepping off the band and losing tension.", "Letting the elbows drift forward."],
+    "harderAlternativeId": "bicep-curl",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "triceps-pushdown",
+    "name": "Triceps Pushdown",
+    "muscleGroups": ["triceps"],
+    "equipment": "FULL_GYM",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Stand at a cable station, grip the bar or rope at chest height.",
+      "Pin your elbows at your sides and push down until arms are straight.",
+      "Return slowly to about 90 degrees without letting elbows rise."
+    ],
+    "commonMistakes": ["Letting the elbows drift forward and using the shoulders.", "Leaning far over the stack for momentum."],
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "bench-dip",
+    "name": "Bench Dip",
+    "muscleGroups": ["triceps", "chest"],
+    "equipment": "BODYWEIGHT",
+    "difficulty": "INTERMEDIATE",
+    "instructions": [
+      "Sit on a bench edge, hands beside your hips, feet out in front.",
+      "Slide off the bench and lower your body until elbows are about 90 degrees.",
+      "Push back up through your palms without shrugging."
+    ],
+    "commonMistakes": ["Letting the shoulders roll forward.", "Going too deep and straining the shoulders."],
+    "easierAlternativeId": "triceps-pushdown",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "plank",
+    "name": "Plank",
+    "muscleGroups": ["core"],
+    "equipment": "BODYWEIGHT",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Rest on your forearms and toes, elbows under your shoulders.",
+      "Keep your body in a straight line from head to heels.",
+      "Brace your core and hold without letting hips sag."
+    ],
+    "breathingCues": ["Keep breathing steadily while braced."],
+    "commonMistakes": ["Hips sagging or piking.", "Holding the breath."],
+    "harderAlternativeId": "hollow-hold",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "side-plank",
+    "name": "Side Plank",
+    "muscleGroups": ["obliques", "core"],
+    "equipment": "BODYWEIGHT",
+    "difficulty": "INTERMEDIATE",
+    "instructions": [
+      "Lie on your side, forearm on the floor, elbow under your shoulder.",
+      "Lift your hips so your body is straight from head to feet.",
+      "Hold, then switch sides."
+    ],
+    "commonMistakes": ["Letting the hips drop toward the floor.", "Rolling the top shoulder forward."],
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "hollow-hold",
+    "name": "Hollow Hold",
+    "muscleGroups": ["core"],
+    "equipment": "BODYWEIGHT",
+    "difficulty": "ADVANCED",
+    "instructions": [
+      "Lie on your back, arms overhead, legs extended.",
+      "Press your lower back into the floor.",
+      "Lift your head, shoulders, and legs slightly off the floor.",
+      "Hold while keeping the lower back glued down."
+    ],
+    "commonMistakes": ["Lower back peeling off the floor.", "Bending the knees and losing the hollow shape."],
+    "easierAlternativeId": "dead-bug",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "dead-bug",
+    "name": "Dead Bug",
+    "muscleGroups": ["core"],
+    "equipment": "BODYWEIGHT",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Lie on your back, arms up, knees bent at 90 degrees.",
+      "Lower the opposite arm and leg toward the floor slowly.",
+      "Return and switch sides while keeping your back flat."
+    ],
+    "commonMistakes": ["Letting the lower back arch off the floor.", "Moving too fast."],
+    "harderAlternativeId": "hollow-hold",
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "crunch",
+    "name": "Crunch",
+    "muscleGroups": ["abs"],
+    "equipment": "BODYWEIGHT",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Lie on your back, knees bent, hands across your chest or by your ears.",
+      "Curl your shoulders off the floor, squeezing your abs.",
+      "Lower back down under control without pulling on your neck."
+    ],
+    "commonMistakes": ["Pulling on the neck.", "Using momentum to sit up."],
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "bird-dog",
+    "name": "Bird Dog",
+    "muscleGroups": ["core", "lower back"],
+    "equipment": "BODYWEIGHT",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Start on hands and knees, wrists under shoulders.",
+      "Extend one arm and the opposite leg until they are level.",
+      "Hold briefly, return, and switch sides."
+    ],
+    "commonMistakes": ["Rotating the hips instead of staying level.", "Lifting the limbs too high and arching."],
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "treadmill-walk",
+    "name": "Incline Treadmill Walk",
+    "muscleGroups": ["legs", "cardiovascular"],
+    "equipment": "CARDIO_MACHINES",
+    "difficulty": "BEGINNER",
+    "instructions": [
+      "Start the treadmill at a comfortable walking speed.",
+      "Add a modest incline to raise effort without running.",
+      "Walk tall with a natural arm swing for the planned duration."
+    ],
+    "commonMistakes": ["Holding the rails and leaning back.", "Setting a speed you cannot sustain."],
+    "author": "Nobelle reviewed",
+    "reviewedUtc": "2024-01-01T00:00:00Z"
+  }
+]

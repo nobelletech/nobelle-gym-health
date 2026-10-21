@@ -1,0 +1,795 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 6,
+    "identityHash": "4c86e75349c9b794b47dc1f7cb755173",
+    "entities": [
+      {
+        "tableName": "workout_sessions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`ownerUID` TEXT NOT NULL, `id` TEXT NOT NULL, `state` TEXT NOT NULL, `startedUtc` INTEGER, `endedUtc` INTEGER, `sequence` INTEGER NOT NULL, `payloadJson` TEXT NOT NULL, `revision` INTEGER NOT NULL, PRIMARY KEY(`ownerUID`, `id`))",
+        "fields": [
+          {
+            "fieldPath": "ownerUID",
+            "columnName": "ownerUID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startedUtc",
+            "columnName": "startedUtc",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "endedUtc",
+            "columnName": "endedUtc",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "sequence",
+            "columnName": "sequence",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payloadJson",
+            "columnName": "payloadJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "ownerUID",
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_workout_sessions_ownerUID_state",
+            "unique": false,
+            "columnNames": [
+              "ownerUID",
+              "state"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workout_sessions_ownerUID_state` ON `${TABLE_NAME}` (`ownerUID`, `state`)"
+          }
+        ]
+      },
+      {
+        "tableName": "workout_sets",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`ownerUID` TEXT NOT NULL, `id` TEXT NOT NULL, `sessionId` TEXT NOT NULL, `completedUtc` INTEGER, `payloadJson` TEXT NOT NULL, `revision` INTEGER NOT NULL, PRIMARY KEY(`ownerUID`, `id`))",
+        "fields": [
+          {
+            "fieldPath": "ownerUID",
+            "columnName": "ownerUID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionId",
+            "columnName": "sessionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "completedUtc",
+            "columnName": "completedUtc",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "payloadJson",
+            "columnName": "payloadJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "ownerUID",
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_workout_sets_ownerUID_sessionId",
+            "unique": false,
+            "columnNames": [
+              "ownerUID",
+              "sessionId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workout_sets_ownerUID_sessionId` ON `${TABLE_NAME}` (`ownerUID`, `sessionId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "gym_visits",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`ownerUID` TEXT NOT NULL, `id` TEXT NOT NULL, `startInstant` INTEGER NOT NULL, `endInstant` INTEGER, `localAttendanceDate` TEXT NOT NULL, `confirmed` INTEGER NOT NULL, `payloadJson` TEXT NOT NULL, `revision` INTEGER NOT NULL, `deletedUtc` INTEGER, PRIMARY KEY(`ownerUID`, `id`))",
+        "fields": [
+          {
+            "fieldPath": "ownerUID",
+            "columnName": "ownerUID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startInstant",
+            "columnName": "startInstant",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endInstant",
+            "columnName": "endInstant",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "localAttendanceDate",
+            "columnName": "localAttendanceDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "confirmed",
+            "columnName": "confirmed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payloadJson",
+            "columnName": "payloadJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedUtc",
+            "columnName": "deletedUtc",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "ownerUID",
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_gym_visits_ownerUID_localAttendanceDate",
+            "unique": false,
+            "columnNames": [
+              "ownerUID",
+              "localAttendanceDate"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_gym_visits_ownerUID_localAttendanceDate` ON `${TABLE_NAME}` (`ownerUID`, `localAttendanceDate`)"
+          }
+        ]
+      },
+      {
+        "tableName": "fasting_sessions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`ownerUID` TEXT NOT NULL, `id` TEXT NOT NULL, `actualStartInstant` INTEGER NOT NULL, `actualEndInstant` INTEGER, `status` TEXT NOT NULL, `payloadJson` TEXT NOT NULL, `revision` INTEGER NOT NULL, `deletedUtc` INTEGER, PRIMARY KEY(`ownerUID`, `id`))",
+        "fields": [
+          {
+            "fieldPath": "ownerUID",
+            "columnName": "ownerUID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actualStartInstant",
+            "columnName": "actualStartInstant",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actualEndInstant",
+            "columnName": "actualEndInstant",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payloadJson",
+            "columnName": "payloadJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedUtc",
+            "columnName": "deletedUtc",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "ownerUID",
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_fasting_sessions_ownerUID_status",
+            "unique": false,
+            "columnNames": [
+              "ownerUID",
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_fasting_sessions_ownerUID_status` ON `${TABLE_NAME}` (`ownerUID`, `status`)"
+          }
+        ]
+      },
+      {
+        "tableName": "fasting_schedules",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`ownerUID` TEXT NOT NULL, `id` TEXT NOT NULL, `enabled` INTEGER NOT NULL, `payloadJson` TEXT NOT NULL, `revision` INTEGER NOT NULL, PRIMARY KEY(`ownerUID`, `id`))",
+        "fields": [
+          {
+            "fieldPath": "ownerUID",
+            "columnName": "ownerUID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "enabled",
+            "columnName": "enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payloadJson",
+            "columnName": "payloadJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "ownerUID",
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_fasting_schedules_ownerUID_enabled",
+            "unique": false,
+            "columnNames": [
+              "ownerUID",
+              "enabled"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_fasting_schedules_ownerUID_enabled` ON `${TABLE_NAME}` (`ownerUID`, `enabled`)"
+          }
+        ]
+      },
+      {
+        "tableName": "health_observations",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`ownerUID` TEXT NOT NULL, `id` TEXT NOT NULL, `marker` TEXT NOT NULL, `measuredUtc` INTEGER NOT NULL, `sourceNamespace` TEXT, `sourceRecordId` TEXT, `payloadJson` TEXT NOT NULL, `revision` INTEGER NOT NULL, `deletedUtc` INTEGER, PRIMARY KEY(`ownerUID`, `id`))",
+        "fields": [
+          {
+            "fieldPath": "ownerUID",
+            "columnName": "ownerUID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "marker",
+            "columnName": "marker",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "measuredUtc",
+            "columnName": "measuredUtc",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceNamespace",
+            "columnName": "sourceNamespace",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sourceRecordId",
+            "columnName": "sourceRecordId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "payloadJson",
+            "columnName": "payloadJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedUtc",
+            "columnName": "deletedUtc",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "ownerUID",
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_health_observations_ownerUID_marker",
+            "unique": false,
+            "columnNames": [
+              "ownerUID",
+              "marker"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_health_observations_ownerUID_marker` ON `${TABLE_NAME}` (`ownerUID`, `marker`)"
+          }
+        ]
+      },
+      {
+        "tableName": "watch_workouts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`ownerUID` TEXT NOT NULL, `id` TEXT NOT NULL, `activity` TEXT NOT NULL, `startedUtc` INTEGER NOT NULL, `endedUtc` INTEGER NOT NULL, `durationSec` INTEGER NOT NULL, `hrSampleCount` INTEGER NOT NULL, `avgBpm` REAL, `maxBpm` REAL, `payloadJson` TEXT NOT NULL, `revision` INTEGER NOT NULL, PRIMARY KEY(`ownerUID`, `id`))",
+        "fields": [
+          {
+            "fieldPath": "ownerUID",
+            "columnName": "ownerUID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activity",
+            "columnName": "activity",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startedUtc",
+            "columnName": "startedUtc",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endedUtc",
+            "columnName": "endedUtc",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "durationSec",
+            "columnName": "durationSec",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hrSampleCount",
+            "columnName": "hrSampleCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avgBpm",
+            "columnName": "avgBpm",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "maxBpm",
+            "columnName": "maxBpm",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "payloadJson",
+            "columnName": "payloadJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "ownerUID",
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_watch_workouts_ownerUID_startedUtc",
+            "unique": false,
+            "columnNames": [
+              "ownerUID",
+              "startedUtc"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_watch_workouts_ownerUID_startedUtc` ON `${TABLE_NAME}` (`ownerUID`, `startedUtc`)"
+          }
+        ]
+      },
+      {
+        "tableName": "outdoor_sessions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`ownerUID` TEXT NOT NULL, `id` TEXT NOT NULL, `activity` TEXT NOT NULL, `startedUtc` INTEGER NOT NULL, `endedUtc` INTEGER NOT NULL, `durationSec` INTEGER NOT NULL, `distanceMeters` REAL NOT NULL, `pointCount` INTEGER NOT NULL, `payloadJson` TEXT NOT NULL, `revision` INTEGER NOT NULL, `createdUtc` INTEGER NOT NULL, `updatedUtc` INTEGER, `deletedUtc` INTEGER, PRIMARY KEY(`ownerUID`, `id`))",
+        "fields": [
+          {
+            "fieldPath": "ownerUID",
+            "columnName": "ownerUID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activity",
+            "columnName": "activity",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startedUtc",
+            "columnName": "startedUtc",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endedUtc",
+            "columnName": "endedUtc",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "durationSec",
+            "columnName": "durationSec",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "distanceMeters",
+            "columnName": "distanceMeters",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pointCount",
+            "columnName": "pointCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payloadJson",
+            "columnName": "payloadJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdUtc",
+            "columnName": "createdUtc",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedUtc",
+            "columnName": "updatedUtc",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "deletedUtc",
+            "columnName": "deletedUtc",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "ownerUID",
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_outdoor_sessions_ownerUID_startedUtc",
+            "unique": false,
+            "columnNames": [
+              "ownerUID",
+              "startedUtc"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_outdoor_sessions_ownerUID_startedUtc` ON `${TABLE_NAME}` (`ownerUID`, `startedUtc`)"
+          }
+        ]
+      },
+      {
+        "tableName": "workout_templates",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`ownerUID` TEXT NOT NULL, `id` TEXT NOT NULL, `name` TEXT NOT NULL, `category` TEXT NOT NULL, `payloadJson` TEXT NOT NULL, `revision` INTEGER NOT NULL, PRIMARY KEY(`ownerUID`, `id`))",
+        "fields": [
+          {
+            "fieldPath": "ownerUID",
+            "columnName": "ownerUID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payloadJson",
+            "columnName": "payloadJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "ownerUID",
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "sync_outbox",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`operationUuid` TEXT NOT NULL, `ownerUID` TEXT NOT NULL, `entityId` TEXT NOT NULL, `entityType` TEXT NOT NULL, `state` TEXT NOT NULL, `attempts` INTEGER NOT NULL, `lastError` TEXT, `createdUtc` INTEGER NOT NULL, `payloadJson` TEXT NOT NULL, PRIMARY KEY(`operationUuid`))",
+        "fields": [
+          {
+            "fieldPath": "operationUuid",
+            "columnName": "operationUuid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ownerUID",
+            "columnName": "ownerUID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityId",
+            "columnName": "entityId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityType",
+            "columnName": "entityType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "attempts",
+            "columnName": "attempts",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastError",
+            "columnName": "lastError",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdUtc",
+            "columnName": "createdUtc",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payloadJson",
+            "columnName": "payloadJson",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "operationUuid"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_sync_outbox_ownerUID_state_createdUtc",
+            "unique": false,
+            "columnNames": [
+              "ownerUID",
+              "state",
+              "createdUtc"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_sync_outbox_ownerUID_state_createdUtc` ON `${TABLE_NAME}` (`ownerUID`, `state`, `createdUtc`)"
+          }
+        ]
+      },
+      {
+        "tableName": "deletion_tombstones",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`ownerUID` TEXT NOT NULL, `entityType` TEXT NOT NULL, `entityId` TEXT NOT NULL, `deletedUtc` INTEGER NOT NULL, `operationUuid` TEXT NOT NULL, PRIMARY KEY(`ownerUID`, `entityType`, `entityId`))",
+        "fields": [
+          {
+            "fieldPath": "ownerUID",
+            "columnName": "ownerUID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityType",
+            "columnName": "entityType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityId",
+            "columnName": "entityId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedUtc",
+            "columnName": "deletedUtc",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "operationUuid",
+            "columnName": "operationUuid",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "ownerUID",
+            "entityType",
+            "entityId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_deletion_tombstones_operationUuid",
+            "unique": true,
+            "columnNames": [
+              "operationUuid"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_deletion_tombstones_operationUuid` ON `${TABLE_NAME}` (`operationUuid`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4c86e75349c9b794b47dc1f7cb755173')"
+    ]
+  }
+}

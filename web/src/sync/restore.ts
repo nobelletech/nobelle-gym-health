@@ -14,6 +14,7 @@ import type {
   SyncEvent,
   WatchWorkoutPayload,
   WorkoutSessionPayload,
+  WorkoutTemplate,
 } from "./model";
 
 /**
@@ -46,6 +47,7 @@ export interface RestoreProgress {
 
 export interface DashboardSnapshot {
   workouts: Map<string, WorkoutSessionPayload>;
+  workoutTemplates: Map<string, WorkoutTemplate>;
   watchWorkouts: Map<string, WatchWorkoutPayload>;
   outdoorSessions: Map<string, OutdoorSession>;
   gymVisits: Map<string, GymVisit>;
@@ -118,6 +120,16 @@ function decodePayload(event: SyncEvent): DecodedPayload {
       if (sets.some((s) => !s || s.sessionId !== p.session.id)) return { ok: false };
       return { ok: true, value: { session: p.session, sets } };
     }
+    case ENTITY_TYPES.WORKOUT_TEMPLATE: {
+      const template = parsed as WorkoutTemplate;
+      if (template.id !== event.entityId || template.ownerUID !== event.accountNamespace ||
+          typeof template.name !== "string" || typeof template.category !== "string" ||
+          !Array.isArray(template.exercises) ||
+          (template.revision ?? 1) !== event.revision ||
+          template.exercises.some((exercise) => !exercise || typeof exercise.exerciseId !== "string" ||
+            !Number.isInteger(exercise.sets) || exercise.sets <= 0)) return { ok: false };
+      return { ok: true, value: template };
+    }
     case ENTITY_TYPES.GYM_VISIT:
     case ENTITY_TYPES.FASTING_SESSION:
     case ENTITY_TYPES.FASTING_SCHEDULE:
@@ -164,7 +176,10 @@ function applyEvent(event: SyncEvent, counters: RestoreProgress): boolean {
   }
   const incoming = { utcMs: utcMillis(event.utc), revision: event.revision };
   const existing = records.get(key);
-  if (!existing || isNewer(incoming, existing)) {
+  const newer = event.entityType === ENTITY_TYPES.WORKOUT_TEMPLATE && existing
+    ? incoming.revision >= existing.revision
+    : !existing || isNewer(incoming, existing);
+  if (newer) {
     records.set(key, {
       entityType: event.entityType,
       entityId: event.entityId,
@@ -181,6 +196,7 @@ function applyEvent(event: SyncEvent, counters: RestoreProgress): boolean {
 function buildSnapshot(counters: RestoreProgress): DashboardSnapshot {
   const snapshot: DashboardSnapshot = {
     workouts: new Map(),
+    workoutTemplates: new Map(),
     watchWorkouts: new Map(),
     outdoorSessions: new Map(),
     gymVisits: new Map(),
@@ -196,6 +212,9 @@ function buildSnapshot(counters: RestoreProgress): DashboardSnapshot {
   };
   for (const record of records.values()) {
     switch (record.entityType) {
+      case ENTITY_TYPES.WORKOUT_TEMPLATE:
+        snapshot.workoutTemplates.set(record.entityId, record.value as WorkoutTemplate);
+        break;
       case ENTITY_TYPES.WORKOUT_SESSION:
         snapshot.workouts.set(record.entityId, record.value as WorkoutSessionPayload);
         break;

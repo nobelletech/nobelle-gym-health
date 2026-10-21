@@ -58,6 +58,62 @@ class WorkoutRepositoryTest {
     }
 
     @Test
+    fun startFromTemplatePrefillsBlankSetSlots() = runBlocking {
+        val template = com.nobelle.core.model.WorkoutTemplate(
+            id = "t1",
+            ownerUID = ownerA.uid,
+            name = "Upper",
+            category = "Strength",
+            exercises = listOf(
+                com.nobelle.core.model.TemplateExercise("push-up", sets = 3, reps = 8, restSec = 60),
+                com.nobelle.core.model.TemplateExercise("plank", sets = 2, durationSec = 30, restSec = 45),
+            ),
+        )
+        val session = repo.startFromTemplate(ownerA, template, "device-x", "America/Toronto", -240)
+
+        assertEquals(WorkoutState.ACTIVE, session.state)
+        assertEquals("t1", session.templateId)
+        assertEquals("Strength", session.category)
+        val sets = repo.sets(ownerA, session.id)
+        assertEquals(5, sets.size)
+        assertEquals(listOf(0, 1, 2, 3, 4), sets.map { it.setIndex })
+        assertEquals(listOf("push-up", "push-up", "push-up", "plank", "plank"), sets.map { it.exerciseId })
+        assertEquals(listOf(60, 60, 60, 45, 45), sets.map { it.restSec })
+        // §8C: nothing is logged for the user — reps, load, duration, completedUtc all null.
+        assertTrue(sets.all { it.reps == null && it.loadKg == null && it.durationSec == null && it.completedUtc == null })
+
+        // Same path as start(): the journey is local until finish() enqueues it.
+        assertTrue(db.outbox().pending(ownerA.uid).isEmpty())
+        repo.finish(ownerA, session.id)
+        val event = json.decodeFromString(
+            SyncEvent.serializer(), db.outbox().pending(ownerA.uid).single().payloadJson,
+        )
+        val payload = json.decodeFromString(WorkoutPayload.serializer(), event.payloadJson)
+        assertEquals("t1", payload.session.templateId)
+        assertEquals(5, payload.sets.size)
+    }
+
+    @Test
+    fun startFromTemplateRejectsForeignAndBlocksDoubleStart() = runBlocking {
+        val foreign = com.nobelle.core.model.WorkoutTemplate(
+            id = "t1", ownerUID = ownerB.uid, name = "X", category = "Strength",
+            exercises = listOf(com.nobelle.core.model.TemplateExercise("push-up", 1, reps = 5)),
+        )
+        try {
+            repo.startFromTemplate(ownerA, foreign, "device-x", "America/Toronto", -240)
+            fail("foreign template must be rejected")
+        } catch (expected: IllegalArgumentException) {
+        }
+        val own = foreign.copy(ownerUID = ownerA.uid)
+        repo.startFromTemplate(ownerA, own, "device-x", "America/Toronto", -240)
+        try {
+            repo.startFromTemplate(ownerA, own, "device-x", "America/Toronto", -240)
+            fail("a second active session must be rejected")
+        } catch (expected: IllegalStateException) {
+        }
+    }
+
+    @Test
     fun pendingOutboxIsOwnerScoped() = runBlocking {
         db.outbox().enqueue(
             SyncOutboxEntity(

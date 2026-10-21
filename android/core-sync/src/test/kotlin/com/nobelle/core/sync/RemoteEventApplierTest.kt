@@ -8,6 +8,9 @@ import com.nobelle.core.data.GymVisitDao
 import com.nobelle.core.data.GymVisitEntity
 import com.nobelle.core.data.HealthObservationDao
 import com.nobelle.core.data.HealthObservationEntity
+import com.nobelle.core.data.WorkoutTemplateDao
+import com.nobelle.core.data.WorkoutTemplateEntity
+import com.nobelle.core.model.WorkoutTemplate
 import com.nobelle.core.data.OutboxDao
 import com.nobelle.core.data.OutdoorSessionDao
 import com.nobelle.core.data.OutdoorSessionEntity
@@ -43,6 +46,27 @@ import org.junit.Test
 class RemoteEventApplierTest {
     private val owner = "accounts.google.com:subject-a"
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+
+    @Test
+    fun templateRevisionIdentityAndTombstone() = runBlocking {
+        val store = FakeStore()
+        val applier = RemoteEventApplier(store, owner)
+        val template = WorkoutTemplate("template-1", owner, "Upper", emptyList(), "Strength", 3)
+        fun upsert(value: WorkoutTemplate, uuid: String) = event(
+            "workout_template", template.id, operationUuid = uuid,
+            payloadJson = json.encodeToString(WorkoutTemplate.serializer(), value),
+        ).copy(revision = value.revision)
+        applier.apply(upsert(template, "new"))
+        applier.apply(upsert(template.copy(name = "Stale", revision = 2), "old"))
+        assertEquals("Upper", store.workoutTemplates.byId(owner, template.id)?.name)
+        applier.apply(upsert(template.copy(ownerUID = "other"), "wrong-owner"))
+        assertFalse(applier.seenOperation("wrong-owner"))
+        applier.apply(event("workout_template", template.id, SyncEvent.Op.DELETE, "delete"))
+        assertNull(store.workoutTemplates.byId(owner, template.id))
+        applier.apply(upsert(template.copy(revision = 4), "resurrect"))
+        assertNull(store.workoutTemplates.byId(owner, template.id))
+        assertTrue(applier.seenOperation("resurrect"))
+    }
 
     private fun event(
         entityType: String,
@@ -423,6 +447,13 @@ class RemoteEventApplierTest {
         val fastingSchedules = FakeFastingScheduleDao()
         val healthObservations = FakeHealthObservationDao()
         val watchWorkouts = FakeWatchWorkoutDao()
+        val workoutTemplates = object : WorkoutTemplateDao {
+            val rows = mutableMapOf<Pair<String, String>, WorkoutTemplateEntity>()
+            override suspend fun upsert(template: WorkoutTemplateEntity) { rows[template.ownerUID to template.id] = template }
+            override suspend fun byId(ownerUID: String, id: String) = rows[ownerUID to id]
+            override suspend fun list(ownerUID: String) = rows.values.filter { it.ownerUID == ownerUID }
+            override suspend fun hardDelete(ownerUID: String, id: String) { rows.remove(ownerUID to id) }
+        }
         val outdoorSessions = FakeOutdoorSessionDao()
         val tombstones = FakeTombstoneDao()
 
@@ -435,6 +466,7 @@ class RemoteEventApplierTest {
         override fun healthObservations() = healthObservations
         override fun watchWorkouts() = watchWorkouts
         override fun outdoorSessions() = outdoorSessions
+        override fun workoutTemplates() = workoutTemplates
         override fun tombstones() = tombstones
         override suspend fun <T> inTransaction(block: suspend () -> T): T = block()
     }
