@@ -30,6 +30,12 @@ data class ExerciseDefinition(
     val contraindicationNotes: String? = null,
     val author: String,
     val reviewedUtc: Instant,
+    /**
+     * Canonical motion primitive (see ExerciseCatalog.MOTION_PRIMITIVES) that
+     * drives the schematic stick-figure animation. Defaults to "press" so
+     * payloads serialized before this field existed still decode.
+     */
+    val motion: String = "press",
 )
 
 @Serializable

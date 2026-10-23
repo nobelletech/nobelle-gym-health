@@ -10,31 +10,43 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
+import com.nobelle.core.coaching.ExerciseMediaManifest
+import com.nobelle.core.coaching.VideoAsset
+import com.nobelle.core.media.ExerciseFigure
+import com.nobelle.core.media.MotionPrimitives
 import com.nobelle.core.model.Equipment
 import com.nobelle.core.model.ExerciseDefinition
 import com.nobelle.core.model.ExperienceLevel
@@ -43,6 +55,11 @@ import com.nobelle.core.model.PlannedSession
 import com.nobelle.core.model.TemplateExercise
 import com.nobelle.core.model.TrainingPlan
 import com.nobelle.phone.coach.CoachViewModel
+import com.nobelle.phone.exercise.ExerciseNarrator
+import com.nobelle.phone.exercise.ExerciseVideoPlayer
+import com.nobelle.phone.exercise.ExerciseVideoRepository
+import com.nobelle.phone.exercise.OfflineVoiceState
+import com.nobelle.phone.exercise.VideoDownloadState
 import com.nobelle.phone.outdoor.OutdoorTrackService
 import com.nobelle.phone.outdoor.OutdoorViewModel
 import kotlinx.datetime.Instant
@@ -82,6 +99,14 @@ fun CoachScreen(
     var detail by remember { mutableStateOf<ExerciseDefinition?>(null) }
     var builder by remember { mutableStateOf<TemplateDraft?>(null) }
     var pickingForBuilder by remember { mutableStateOf(false) }
+
+    // Exercise media: single narrator instance + the checksum-verified local
+    // video store. Both are app-data-local — nothing here leaves the device.
+    val videoRepository = remember { ExerciseVideoRepository(context.applicationContext) }
+    val narrator = remember { ExerciseNarrator(context.applicationContext) }
+    DisposableEffect(Unit) {
+        onDispose { narrator.shutdown() }
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -140,7 +165,13 @@ fun CoachScreen(
     }
 
     detail?.let { exercise ->
-        ExerciseDetailDialog(exercise, coach.catalogById) { detail = null }
+        ExerciseDetailDialog(
+            exercise = exercise,
+            byId = coach.catalogById,
+            videos = videoRepository,
+            narrator = narrator,
+            onDismiss = { detail = null },
+        )
     }
 
     coach.suggestedPlan?.let { suggestion ->
@@ -218,7 +249,8 @@ fun CoachScreen(
         InfoCard(
             title = "Exercise library",
             body = "${coach.catalog.size} reviewed exercises — search by name, muscle, equipment and difficulty. " +
-                "Instructions are text; they are not a live form assessment.",
+                "Demonstrations are schematic figures with narration, clearly labelled and pending " +
+                "technique review; they are not a live form assessment.",
             trailing = { OutlinedButton(onClick = { libraryOpen = true }) { Text("Browse") } },
         )
 
@@ -441,20 +473,33 @@ private fun LibraryPickerDialog(
                 } else {
                     LazyColumn(Modifier.fillMaxWidth().heightIn(max = 320.dp)) {
                         items(results) { def ->
-                            Column(
+                            Row(
                                 Modifier.fillMaxWidth()
                                     .clickable { onPick(def) }
                                     .padding(vertical = 8.dp)
                                     .semantics { contentDescription = def.name },
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text(def.name, style = MaterialTheme.typography.bodyMedium)
-                                Text(
-                                    "${def.muscleGroups.joinToString(", ")} · " +
-                                        "${def.equipment.name.lowercase().replace('_', ' ')} · " +
-                                        def.difficulty.name.lowercase(),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                ExerciseFigure(
+                                    primitive = def.motion,
+                                    animated = false,
+                                    modifier = Modifier.size(44.dp),
                                 )
+                                Column(Modifier.padding(start = 10.dp).weight(1f)) {
+                                    Text(def.name, style = MaterialTheme.typography.bodyMedium)
+                                    Text(
+                                        "${def.muscleGroups.joinToString(", ")} · " +
+                                            "${def.equipment.name.lowercase().replace('_', ' ')} · " +
+                                            def.difficulty.name.lowercase(),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    Text(
+                                        "Motion: ${def.motion} — schematic animation",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         }
                     }
@@ -469,13 +514,41 @@ private fun LibraryPickerDialog(
 private fun ExerciseDetailDialog(
     exercise: ExerciseDefinition,
     byId: Map<String, ExerciseDefinition>,
+    videos: ExerciseVideoRepository,
+    narrator: ExerciseNarrator,
     onDismiss: () -> Unit,
 ) {
+    val mediaEntry = remember(exercise.id) { ExerciseMediaManifest.byId()[exercise.id] }
+    val videoAsset = mediaEntry?.video
+    val speakSteps = mediaEntry?.tts?.speakSteps ?: true
+
+    // Load this exercise's narration script; stop narration when dismissed.
+    DisposableEffect(exercise.id) {
+        narrator.loadScript(exercise.instructions, speakSteps)
+        onDispose { narrator.stop() }
+    }
+
+    val voiceState by narrator.voiceState.collectAsState()
+    val speaking by narrator.speaking.collectAsState()
+    val currentStep by narrator.currentStepIndex.collectAsState()
+    val videoState by videos.state(exercise.id).collectAsState()
+
+    // Cue windows: one per instruction step, in setup/movement/return order.
+    val windows = remember(exercise.motion, exercise.instructions.size) {
+        MotionPrimitives.stepWindows(exercise.motion, exercise.instructions.size)
+    }
+    val activeWindow = currentStep?.let { windows.getOrNull(it) }
+    val videoFile = remember(exercise.id, videoState) { videos.downloadedFile(exercise.id) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(exercise.name) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                Modifier.fillMaxWidth().heightIn(max = 520.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 Text(
                     "${exercise.muscleGroups.joinToString(", ")} · " +
                         "${exercise.equipment.name.lowercase().replace('_', ' ')} · " +
@@ -483,9 +556,60 @@ private fun ExerciseDetailDialog(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                // Visible, honest technique-review metadata (§ pending review).
+                Text(
+                    mediaEntry?.techniqueReviewLabel
+                        ?: "Technique review: pending — movement technique pending review before release.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.tertiary,
+                )
+
+                // Fallback chain: verified local video -> schematic figure + narration.
+                if (videoState is VideoDownloadState.Downloaded && videoFile != null) {
+                    ExerciseVideoPlayer(videoFile, modifier = Modifier.fillMaxWidth())
+                    videoAsset?.let { asset ->
+                        Text(
+                            "Video: ${asset.license} — ${asset.attribution} " +
+                                "(source: ${asset.source}, v${asset.version}).",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    OutlinedButton(onClick = { videos.deleteDownloaded(exercise.id) }) {
+                        Text("Delete downloaded video")
+                    }
+                } else {
+                    ExerciseFigure(
+                        primitive = exercise.motion,
+                        animated = true,
+                        phaseWindow = activeWindow,
+                        modifier = Modifier.fillMaxWidth().height(170.dp),
+                    )
+                    Text(
+                        "Schematic figure — not a substitute for the instructions.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    VideoDownloadSection(exercise.id, videoState, videoAsset, videos)
+                    NarrationSection(voiceState, speaking, speakSteps, narrator)
+                }
+
                 Text("Instructions", style = MaterialTheme.typography.titleSmall)
                 exercise.instructions.forEachIndexed { index, step ->
-                    Text("${index + 1}. $step", style = MaterialTheme.typography.bodyMedium)
+                    val highlighted = index == currentStep && speaking
+                    Text(
+                        "${index + 1}. $step",
+                        style = if (highlighted) {
+                            MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                        } else {
+                            MaterialTheme.typography.bodyMedium
+                        },
+                        color = if (highlighted) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
+                    )
                 }
                 if (exercise.commonMistakes.isNotEmpty()) {
                     Text("Common mistakes", style = MaterialTheme.typography.titleSmall)
@@ -517,6 +641,95 @@ private fun ExerciseDetailDialog(
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
     )
+}
+
+/** Download states below the schematic figure. Interrupted downloads and
+ * checksum mismatches never leave a partial file behind. */
+@Composable
+private fun VideoDownloadSection(
+    exerciseId: String,
+    state: VideoDownloadState,
+    videoAsset: VideoAsset?,
+    videos: ExerciseVideoRepository,
+) {
+    when (state) {
+        is VideoDownloadState.NotAvailable -> Text(
+            "Video demonstration: not available yet — pending content milestone.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        is VideoDownloadState.NotDownloaded -> Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "Video ready to download" + (videoAsset?.sizeBytes?.let { " (${"%.1f".format(it / 1_000_000f)} MB)" } ?: "") +
+                    " — plays offline from local storage only.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
+            OutlinedButton(onClick = { videos.download(exerciseId) }) { Text("Download") }
+        }
+        is VideoDownloadState.Downloading -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            LinearProgressIndicator(
+                progress = { state.progress },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text(
+                "Downloading… ${(state.progress * 100).toInt()}% — cancel anytime, nothing partial is kept.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedButton(onClick = { videos.cancel(exerciseId) }) { Text("Cancel") }
+        }
+        is VideoDownloadState.Failed -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                "Download failed: ${state.reason}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+            OutlinedButton(onClick = { videos.download(exerciseId) }) { Text("Retry") }
+        }
+        VideoDownloadState.Downloaded -> Unit // rendered as the player by the caller
+    }
+}
+
+/** Narration controls + captions-only guidance. Never blocks: voice init is
+ * async and [voiceState] is null while the engine reports. */
+@Composable
+private fun NarrationSection(
+    voiceState: OfflineVoiceState?,
+    speaking: Boolean,
+    speakSteps: Boolean,
+    narrator: ExerciseNarrator,
+) {
+    when {
+        !speakSteps -> Text(
+            "Narration is disabled for this exercise — captions only.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        voiceState == null -> Text(
+            "Preparing narration…",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        voiceState == OfflineVoiceState.READY -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = { narrator.play() }, enabled = !speaking) {
+                Text(if (speaking) "Speaking…" else "Play")
+            }
+            OutlinedButton(onClick = { narrator.pause() }, enabled = speaking) { Text("Pause") }
+            OutlinedButton(onClick = { narrator.replay() }, enabled = !speaking) { Text("Replay") }
+        }
+        voiceState == OfflineVoiceState.VOICE_MISSING -> Text(
+            "No offline voice installed — captions only. Install one: Settings → General management → " +
+                "Text-to-speech → Preferred engine → Install voice data (works offline in airplane mode).",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 @Composable

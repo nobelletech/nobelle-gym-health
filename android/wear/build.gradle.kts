@@ -39,6 +39,9 @@ android {
 
 dependencies {
     implementation(project(":android:core-model"))
+    // Shared schematic figure engine + the curated catalog (preview set).
+    implementation(project(":android:core-coaching"))
+    implementation(project(":android:core-media"))
 
     implementation(platform(libs.compose.bom))
     implementation(libs.wear.compose.material3)

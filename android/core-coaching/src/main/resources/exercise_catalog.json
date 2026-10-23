@@ -1,6 +1,7 @@
 [
   {
     "id": "barbell-bench-press",
+    "motion": "press",
     "name": "Barbell Bench Press",
     "muscleGroups": ["chest", "triceps", "front delts"],
     "equipment": "FULL_GYM",
@@ -21,6 +22,7 @@
   },
   {
     "id": "machine-chest-press",
+    "motion": "press",
     "name": "Machine Chest Press",
     "muscleGroups": ["chest", "triceps"],
     "equipment": "FULL_GYM",
@@ -38,6 +40,7 @@
   },
   {
     "id": "dumbbell-bench-press",
+    "motion": "press",
     "name": "Dumbbell Bench Press",
     "muscleGroups": ["chest", "triceps"],
     "equipment": "DUMBBELLS",
@@ -55,6 +58,7 @@
   },
   {
     "id": "incline-dumbbell-press",
+    "motion": "press",
     "name": "Incline Dumbbell Press",
     "muscleGroups": ["upper chest", "front delts", "triceps"],
     "equipment": "DUMBBELLS",
@@ -72,6 +76,7 @@
   },
   {
     "id": "push-up",
+    "motion": "push_up",
     "name": "Push-Up",
     "muscleGroups": ["chest", "triceps", "core"],
     "equipment": "BODYWEIGHT",
@@ -90,6 +95,7 @@
   },
   {
     "id": "knee-push-up",
+    "motion": "push_up",
     "name": "Knee Push-Up",
     "muscleGroups": ["chest", "triceps"],
     "equipment": "BODYWEIGHT",
@@ -106,6 +112,7 @@
   },
   {
     "id": "dumbbell-chest-fly",
+    "motion": "fly",
     "name": "Dumbbell Chest Fly",
     "muscleGroups": ["chest"],
     "equipment": "DUMBBELLS",
@@ -123,6 +130,7 @@
   },
   {
     "id": "conventional-deadlift",
+    "motion": "hinge",
     "name": "Conventional Deadlift",
     "muscleGroups": ["back", "glutes", "hamstrings"],
     "equipment": "FULL_GYM",
@@ -143,6 +151,7 @@
   },
   {
     "id": "romanian-deadlift",
+    "motion": "hinge",
     "name": "Romanian Deadlift",
     "muscleGroups": ["hamstrings", "glutes", "lower back"],
     "equipment": "FULL_GYM",
@@ -161,6 +170,7 @@
   },
   {
     "id": "barbell-bent-over-row",
+    "motion": "row",
     "name": "Barbell Bent-Over Row",
     "muscleGroups": ["lats", "upper back", "biceps"],
     "equipment": "FULL_GYM",
@@ -178,6 +188,7 @@
   },
   {
     "id": "one-arm-dumbbell-row",
+    "motion": "row",
     "name": "One-Arm Dumbbell Row",
     "muscleGroups": ["lats", "upper back", "biceps"],
     "equipment": "DUMBBELLS",
@@ -194,6 +205,7 @@
   },
   {
     "id": "lat-pulldown",
+    "motion": "pulldown",
     "name": "Lat Pulldown",
     "muscleGroups": ["lats", "biceps", "upper back"],
     "equipment": "FULL_GYM",
@@ -212,6 +224,7 @@
   },
   {
     "id": "assisted-pull-up",
+    "motion": "pulldown",
     "name": "Assisted Pull-Up",
     "muscleGroups": ["lats", "biceps", "upper back"],
     "equipment": "FULL_GYM",
@@ -230,6 +243,7 @@
   },
   {
     "id": "pull-up",
+    "motion": "pulldown",
     "name": "Pull-Up",
     "muscleGroups": ["lats", "biceps", "upper back"],
     "equipment": "BODYWEIGHT",
@@ -246,6 +260,7 @@
   },
   {
     "id": "seated-cable-row",
+    "motion": "row",
     "name": "Seated Cable Row",
     "muscleGroups": ["upper back", "lats", "biceps"],
     "equipment": "FULL_GYM",
@@ -263,6 +278,7 @@
   },
   {
     "id": "band-pull-apart",
+    "motion": "row",
     "name": "Band Pull-Apart",
     "muscleGroups": ["rear delts", "upper back"],
     "equipment": "RESISTANCE_BANDS",
@@ -278,6 +294,7 @@
   },
   {
     "id": "back-squat",
+    "motion": "squat",
     "name": "Back Squat",
     "muscleGroups": ["quads", "glutes", "core"],
     "equipment": "FULL_GYM",
@@ -296,6 +313,7 @@
   },
   {
     "id": "goblet-squat",
+    "motion": "squat",
     "name": "Goblet Squat",
     "muscleGroups": ["quads", "glutes", "core"],
     "equipment": "DUMBBELLS",
@@ -314,6 +332,7 @@
   },
   {
     "id": "bodyweight-squat",
+    "motion": "squat",
     "name": "Bodyweight Squat",
     "muscleGroups": ["quads", "glutes"],
     "equipment": "BODYWEIGHT",
@@ -330,6 +349,7 @@
   },
   {
     "id": "leg-press",
+    "motion": "press",
     "name": "Leg Press",
     "muscleGroups": ["quads", "glutes"],
     "equipment": "FULL_GYM",
@@ -346,6 +366,7 @@
   },
   {
     "id": "bulgarian-split-squat",
+    "motion": "lunge",
     "name": "Bulgarian Split Squat",
     "muscleGroups": ["quads", "glutes", "core"],
     "equipment": "DUMBBELLS",
@@ -363,6 +384,7 @@
   },
   {
     "id": "reverse-lunge",
+    "motion": "lunge",
     "name": "Reverse Lunge",
     "muscleGroups": ["quads", "glutes"],
     "equipment": "DUMBBELLS",
@@ -381,6 +403,7 @@
   },
   {
     "id": "step-up",
+    "motion": "squat",
     "name": "Step-Up",
     "muscleGroups": ["quads", "glutes"],
     "equipment": "DUMBBELLS",
@@ -397,6 +420,7 @@
   },
   {
     "id": "leg-extension",
+    "motion": "press",
     "name": "Leg Extension",
     "muscleGroups": ["quads"],
     "equipment": "FULL_GYM",
@@ -412,6 +436,7 @@
   },
   {
     "id": "seated-leg-curl",
+    "motion": "curl",
     "name": "Seated Leg Curl",
     "muscleGroups": ["hamstrings"],
     "equipment": "FULL_GYM",
@@ -427,6 +452,7 @@
   },
   {
     "id": "standing-calf-raise",
+    "motion": "raise",
     "name": "Standing Calf Raise",
     "muscleGroups": ["calves"],
     "equipment": "FULL_GYM",
@@ -444,6 +470,7 @@
   },
   {
     "id": "bodyweight-calf-raise",
+    "motion": "raise",
     "name": "Bodyweight Calf Raise",
     "muscleGroups": ["calves"],
     "equipment": "BODYWEIGHT",
@@ -460,6 +487,7 @@
   },
   {
     "id": "hip-thrust",
+    "motion": "hip_thrust",
     "name": "Barbell Hip Thrust",
     "muscleGroups": ["glutes", "hamstrings"],
     "equipment": "FULL_GYM",
@@ -477,6 +505,7 @@
   },
   {
     "id": "glute-bridge",
+    "motion": "hip_thrust",
     "name": "Glute Bridge",
     "muscleGroups": ["glutes", "hamstrings"],
     "equipment": "BODYWEIGHT",
@@ -493,6 +522,7 @@
   },
   {
     "id": "overhead-press",
+    "motion": "press",
     "name": "Overhead Barbell Press",
     "muscleGroups": ["shoulders", "triceps", "core"],
     "equipment": "FULL_GYM",
@@ -511,6 +541,7 @@
   },
   {
     "id": "seated-dumbbell-press",
+    "motion": "press",
     "name": "Seated Dumbbell Shoulder Press",
     "muscleGroups": ["shoulders", "triceps"],
     "equipment": "DUMBBELLS",
@@ -527,6 +558,7 @@
   },
   {
     "id": "lateral-raise",
+    "motion": "raise",
     "name": "Dumbbell Lateral Raise",
     "muscleGroups": ["side delts"],
     "equipment": "DUMBBELLS",
@@ -543,6 +575,7 @@
   },
   {
     "id": "rear-delt-fly",
+    "motion": "fly",
     "name": "Dumbbell Rear-Delt Fly",
     "muscleGroups": ["rear delts", "upper back"],
     "equipment": "DUMBBELLS",
@@ -559,6 +592,7 @@
   },
   {
     "id": "dumbbell-shrug",
+    "motion": "raise",
     "name": "Dumbbell Shrug",
     "muscleGroups": ["traps"],
     "equipment": "DUMBBELLS",
@@ -574,6 +608,7 @@
   },
   {
     "id": "bicep-curl",
+    "motion": "curl",
     "name": "Dumbbell Curl",
     "muscleGroups": ["biceps"],
     "equipment": "DUMBBELLS",
@@ -591,6 +626,7 @@
   },
   {
     "id": "hammer-curl",
+    "motion": "curl",
     "name": "Hammer Curl",
     "muscleGroups": ["biceps", "forearms"],
     "equipment": "DUMBBELLS",
@@ -607,6 +643,7 @@
   },
   {
     "id": "band-curl",
+    "motion": "curl",
     "name": "Band Curl",
     "muscleGroups": ["biceps"],
     "equipment": "RESISTANCE_BANDS",
@@ -623,6 +660,7 @@
   },
   {
     "id": "triceps-pushdown",
+    "motion": "press",
     "name": "Triceps Pushdown",
     "muscleGroups": ["triceps"],
     "equipment": "FULL_GYM",
@@ -638,6 +676,7 @@
   },
   {
     "id": "bench-dip",
+    "motion": "press",
     "name": "Bench Dip",
     "muscleGroups": ["triceps", "chest"],
     "equipment": "BODYWEIGHT",
@@ -654,6 +693,7 @@
   },
   {
     "id": "plank",
+    "motion": "plank",
     "name": "Plank",
     "muscleGroups": ["core"],
     "equipment": "BODYWEIGHT",
@@ -671,6 +711,7 @@
   },
   {
     "id": "side-plank",
+    "motion": "plank",
     "name": "Side Plank",
     "muscleGroups": ["obliques", "core"],
     "equipment": "BODYWEIGHT",
@@ -686,6 +727,7 @@
   },
   {
     "id": "hollow-hold",
+    "motion": "plank",
     "name": "Hollow Hold",
     "muscleGroups": ["core"],
     "equipment": "BODYWEIGHT",
@@ -703,6 +745,7 @@
   },
   {
     "id": "dead-bug",
+    "motion": "crunch",
     "name": "Dead Bug",
     "muscleGroups": ["core"],
     "equipment": "BODYWEIGHT",
@@ -719,6 +762,7 @@
   },
   {
     "id": "crunch",
+    "motion": "crunch",
     "name": "Crunch",
     "muscleGroups": ["abs"],
     "equipment": "BODYWEIGHT",
@@ -734,6 +778,7 @@
   },
   {
     "id": "bird-dog",
+    "motion": "plank",
     "name": "Bird Dog",
     "muscleGroups": ["core", "lower back"],
     "equipment": "BODYWEIGHT",
@@ -749,6 +794,7 @@
   },
   {
     "id": "treadmill-walk",
+    "motion": "lunge",
     "name": "Incline Treadmill Walk",
     "muscleGroups": ["legs", "cardiovascular"],
     "equipment": "CARDIO_MACHINES",

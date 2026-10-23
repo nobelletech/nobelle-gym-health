@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -46,39 +49,45 @@ class MainActivity : ComponentActivity() {
                 val enroll by model.enrollState.collectAsStateWithLifecycle()
                 val enrollMessage by model.enrollMessage.collectAsStateWithLifecycle()
                 val workout by model.workout.collectAsStateWithLifecycle()
-                WearHome(
-                    state = state,
-                    enroll = enroll,
-                    enrollMessage = enrollMessage,
-                    workout = workout,
-                    onStartWorkout = model::startWorkout,
-                    onFinishWorkout = model::finishWorkout,
-                    onDiscardWorkout = model::discardWorkout,
-                    onSyncNow = model::syncNow,
-                    onEnroll = model::enrollWatch,
-                    onEnrollCancel = model::cancelEnroll,
-                    onForgetPhone = model::forgetPhone,
-                    onRefresh = model::probe,
-                    onHeartRate = {
-                        if (model.hasHeartRatePermission()) {
-                            model.testHeartRate()
-                        } else {
-                            sensorPermissionLauncher.launch(
-                                model.requiredHeartRatePermissions(),
-                            )
-                        }
-                    },
-                    onGps = {
-                        if (model.hasLocationPermission()) {
-                            model.testGps()
-                        } else {
-                            locationPermissionLauncher.launch(
-                                model.requiredLocationPermission().first(),
-                            )
-                        }
-                    },
-                    onHaptic = model::testHaptic,
-                )
+                var showExercisePreview by remember { mutableStateOf(false) }
+                if (showExercisePreview) {
+                    WearExercisePreview(onBack = { showExercisePreview = false })
+                } else {
+                    WearHome(
+                        state = state,
+                        enroll = enroll,
+                        enrollMessage = enrollMessage,
+                        workout = workout,
+                        onStartWorkout = model::startWorkout,
+                        onFinishWorkout = model::finishWorkout,
+                        onDiscardWorkout = model::discardWorkout,
+                        onSyncNow = model::syncNow,
+                        onEnroll = model::enrollWatch,
+                        onEnrollCancel = model::cancelEnroll,
+                        onForgetPhone = model::forgetPhone,
+                        onRefresh = model::probe,
+                        onHeartRate = {
+                            if (model.hasHeartRatePermission()) {
+                                model.testHeartRate()
+                            } else {
+                                sensorPermissionLauncher.launch(
+                                    model.requiredHeartRatePermissions(),
+                                )
+                            }
+                        },
+                        onGps = {
+                            if (model.hasLocationPermission()) {
+                                model.testGps()
+                            } else {
+                                locationPermissionLauncher.launch(
+                                    model.requiredLocationPermission().first(),
+                                )
+                            }
+                        },
+                        onHaptic = model::testHaptic,
+                        onExercisePreview = { showExercisePreview = true },
+                    )
+                }
             }
         }
     }
@@ -101,6 +110,7 @@ fun WearHome(
     onHeartRate: () -> Unit,
     onGps: () -> Unit,
     onHaptic: () -> Unit,
+    onExercisePreview: () -> Unit,
 ) {
     val listState = rememberScalingLazyListState()
     ScalingLazyColumn(
@@ -228,6 +238,12 @@ fun WearHome(
         }
         item {
             Button(onClick = onHaptic) { Text("Test haptic") }
+        }
+
+        // Exercise media preview (§5): schematic figures + captions, the
+        // same catalog as the phone (compact "preview set", honestly labelled).
+        item {
+            Button(onClick = onExercisePreview) { Text("Exercise preview") }
         }
 
         // Workout recording + phone sync (§7): only an enrolled watch can

@@ -46,6 +46,7 @@ android {
 dependencies {
     implementation(project(":android:core-model"))
     implementation(project(":android:core-coaching"))
+    implementation(project(":android:core-media"))
     implementation(project(":android:core-health"))
     implementation(project(":android:core-sync"))
     implementation(project(":android:core-data"))
@@ -61,6 +62,9 @@ dependencies {
     implementation(libs.navigation.compose)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
+    // Local (never streamed) playback of checksum-verified exercise videos.
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.ui)
     implementation(libs.play.services.wearable)
     // GoogleAuthUtil.getToken (silent Drive token refresh for the background
     // outbox worker) ships inside play-services-auth-base, pulled transitively

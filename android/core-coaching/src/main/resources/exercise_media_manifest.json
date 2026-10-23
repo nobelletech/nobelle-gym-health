@@ -1,0 +1,556 @@
+{
+  "entries": [
+    {
+      "id": "barbell-bench-press",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "machine-chest-press",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "dumbbell-bench-press",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "incline-dumbbell-press",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "push-up",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "knee-push-up",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "dumbbell-chest-fly",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "conventional-deadlift",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "romanian-deadlift",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "barbell-bent-over-row",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "one-arm-dumbbell-row",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "lat-pulldown",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "assisted-pull-up",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "pull-up",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "seated-cable-row",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "band-pull-apart",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "back-squat",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "goblet-squat",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "bodyweight-squat",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "leg-press",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "bulgarian-split-squat",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "reverse-lunge",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "step-up",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "leg-extension",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "seated-leg-curl",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "standing-calf-raise",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "bodyweight-calf-raise",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "hip-thrust",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "glute-bridge",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "overhead-press",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "seated-dumbbell-press",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "lateral-raise",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "rear-delt-fly",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "dumbbell-shrug",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "bicep-curl",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "hammer-curl",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "band-curl",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "triceps-pushdown",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "bench-dip",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "plank",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "side-plank",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "hollow-hold",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "dead-bug",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "crunch",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "bird-dog",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    },
+    {
+      "id": "treadmill-walk",
+      "video": null,
+      "techniqueReview": {
+        "status": "PENDING",
+        "reviewedBy": null,
+        "reviewedUtc": null
+      },
+      "tts": {
+        "speakSteps": true
+      }
+    }
+  ]
+}

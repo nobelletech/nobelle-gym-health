@@ -34,6 +34,9 @@ object ExerciseCatalog {
             }
             require(def.instructions.size >= 3) { "${def.id}: needs at least 3 instruction steps" }
             require(def.commonMistakes.isNotEmpty()) { "${def.id}: needs at least 1 common mistake" }
+            require(def.motion.isNotBlank() && def.motion in MOTION_PRIMITIVES) {
+                "${def.id}: motion '${def.motion}' is not a canonical motion primitive"
+            }
             def.easierAlternativeId?.let {
                 require(it in byId) { "${def.id}: easier alternative '$it' does not resolve" }
             }
@@ -49,3 +52,12 @@ object ExerciseCatalog {
             ?.bufferedReader().use { it?.readText() }
             ?: throw IllegalStateException("Bundled exercise catalog resource is missing")
 }
+
+/**
+ * The canonical set of movement patterns the stick-figure animator knows how
+ * to draw. Every catalog entry must carry one of these as its [ExerciseDefinition.motion].
+ */
+val MOTION_PRIMITIVES: Set<String> = setOf(
+    "press", "push_up", "squat", "lunge", "hinge", "hip_thrust", "row", "pulldown",
+    "curl", "raise", "fly", "plank", "crunch", "carry", "climb", "burpee",
+)
