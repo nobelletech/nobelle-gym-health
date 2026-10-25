@@ -2,8 +2,18 @@ package com.nobelle.phone.exercise
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import android.media.MediaMetadataRetriever
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.OutlinedButton
@@ -80,5 +90,35 @@ fun ExerciseVideoPlayer(file: File, modifier: Modifier = Modifier) {
                 contentPadding = tight,
             ) { Text(if (muted) "Unmute" else "Mute", maxLines = 1) }
         }
+    }
+}
+/**
+ * Static poster frame (first frame) of a downloaded exercise video, for
+ * places where a small preview replaces the schematic figure — e.g. the
+ * library browse row. Extraction happens off the main thread; nothing is
+ * drawn while the frame loads.
+ */
+@Composable
+fun VideoThumbnail(file: File, modifier: Modifier = Modifier) {
+    val bitmap by produceState<ImageBitmap?>(initialValue = null, file) {
+        value = withContext(Dispatchers.IO) {
+            runCatching {
+                val retriever = MediaMetadataRetriever()
+                try {
+                    retriever.setDataSource(file.absolutePath)
+                    retriever.getFrameAtTime(0)?.asImageBitmap()
+                } finally {
+                    retriever.release()
+                }
+            }.getOrNull()
+        }
+    }
+    bitmap?.let {
+        Image(
+            bitmap = it,
+            contentDescription = null,
+            modifier = modifier.clip(RoundedCornerShape(6.dp)),
+            contentScale = ContentScale.Crop,
+        )
     }
 }

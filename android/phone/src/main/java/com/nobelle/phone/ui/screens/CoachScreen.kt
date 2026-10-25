@@ -58,6 +58,7 @@ import com.nobelle.phone.coach.CoachViewModel
 import com.nobelle.phone.exercise.ExerciseNarrator
 import com.nobelle.phone.exercise.ExerciseVideoPlayer
 import com.nobelle.phone.exercise.ExerciseVideoRepository
+import com.nobelle.phone.exercise.VideoThumbnail
 import com.nobelle.phone.exercise.OfflineVoiceState
 import com.nobelle.phone.exercise.VideoDownloadState
 import com.nobelle.phone.outdoor.OutdoorTrackService
@@ -146,6 +147,7 @@ fun CoachScreen(
     if (libraryOpen || pickingForBuilder) {
         LibraryPickerDialog(
             catalog = coach.catalog,
+            videos = videoRepository,
             onDismiss = {
                 libraryOpen = false
                 pickingForBuilder = false
@@ -414,6 +416,7 @@ private data class TemplateDraft(
 @Composable
 private fun LibraryPickerDialog(
     catalog: List<ExerciseDefinition>,
+    videos: ExerciseVideoRepository,
     onPick: (ExerciseDefinition) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -480,11 +483,23 @@ private fun LibraryPickerDialog(
                                     .semantics { contentDescription = def.name },
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                ExerciseFigure(
-                                    primitive = def.motion,
-                                    animated = false,
-                                    modifier = Modifier.size(44.dp),
-                                )
+                                // Downloaded video shows its poster frame;
+                                // otherwise the labeled schematic figure.
+                                val thumbState by videos.state(def.id).collectAsState()
+                                val thumbFile = if (thumbState is VideoDownloadState.Downloaded) {
+                                    videos.downloadedFile(def.id)
+                                } else {
+                                    null
+                                }
+                                if (thumbFile != null) {
+                                    VideoThumbnail(thumbFile, Modifier.size(44.dp))
+                                } else {
+                                    ExerciseFigure(
+                                        primitive = def.motion,
+                                        animated = false,
+                                        modifier = Modifier.size(44.dp),
+                                    )
+                                }
                                 Column(Modifier.padding(start = 10.dp).weight(1f)) {
                                     Text(def.name, style = MaterialTheme.typography.bodyMedium)
                                     Text(
@@ -495,7 +510,11 @@ private fun LibraryPickerDialog(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                     Text(
-                                        "Motion: ${def.motion} — schematic animation",
+                                        if (thumbFile != null) {
+                                            "Trainer video downloaded"
+                                        } else {
+                                            "Motion: ${def.motion} — schematic animation"
+                                        },
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
