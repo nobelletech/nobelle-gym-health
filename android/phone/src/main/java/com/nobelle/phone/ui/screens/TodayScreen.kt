@@ -153,6 +153,7 @@ fun TodayScreen(
                 "Workouts are stored encrypted on this device. Connect your Google identity " +
                     "in Profile to enable Drive upload."
             },
+            tone = CardTone.Sky,
         )
 
         gymVisits.message?.let { message ->
@@ -205,7 +206,7 @@ private fun WorkoutCard(
     onRequestDiscard: () -> Unit,
 ) {
     val session = workout.session
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(modifier = Modifier.fillMaxWidth(), colors = nobelleCardColors(CardTone.Mint)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             when {
                 !workout.ownerAvailable && session == null -> {
@@ -285,7 +286,7 @@ private fun WatchEnrollCard(
     onReject: () -> Unit,
     onForget: () -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(modifier = Modifier.fillMaxWidth(), colors = nobelleCardColors(CardTone.Sky)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Watch", style = MaterialTheme.typography.titleMedium)
             val pending = watch.pending
@@ -391,7 +392,7 @@ private fun SetEntryCard(enabled: Boolean, onAddSet: (SetEntryInput) -> Unit) {
     var showExercisePicker by remember { mutableStateOf(false) }
     var selectedPreset by remember { mutableStateOf<ExercisePreset?>(null) }
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(modifier = Modifier.fillMaxWidth(), colors = nobelleCardColors(CardTone.Sand)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Log a set", style = MaterialTheme.typography.titleMedium)
             if (manualMode) {
@@ -869,7 +870,7 @@ private fun GuidedWorkoutCard(
     var restLabel by remember { mutableStateOf("") }
     var restNowMs by remember { mutableStateOf(0L) }
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(modifier = Modifier.fillMaxWidth(), colors = nobelleCardColors(CardTone.Mint)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Guided workout", style = MaterialTheme.typography.titleMedium)
             Text(
@@ -1203,7 +1204,7 @@ private fun GymAttendanceCard(
     var editing by remember { mutableStateOf<GymVisit?>(null) }
     var deleting by remember { mutableStateOf<GymVisit?>(null) }
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(modifier = Modifier.fillMaxWidth(), colors = nobelleCardColors(CardTone.Peach)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Gym check-in", style = MaterialTheme.typography.titleMedium)
             if (!gymVisits.ownerAvailable) {

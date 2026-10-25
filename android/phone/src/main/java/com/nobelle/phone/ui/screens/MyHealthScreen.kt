@@ -112,6 +112,7 @@ fun MyHealthScreen(
             val groupMarkers = healthConnect.storedSummaries.filter { it.group == group }
             InfoCard(
                 title = group.displayName,
+                tone = CardTone.Rose,
                 body = if (groupMarkers.isEmpty()) {
                     "No data yet. Connect a source or add a manual entry."
                 } else {
@@ -167,6 +168,7 @@ fun MyHealthScreen(
             title = "Ask Nobelle Health AI",
             body = "On-device explanations of your records. Disabled until you enable AI processing.",
             trailing = { OutlinedButton(onClick = {}) { Text("About") } },
+            tone = CardTone.Lilac,
         )
     }
 
@@ -310,7 +312,7 @@ private fun FastingCard(
     onRequestDisable: () -> Unit,
     onRequestDelete: (String) -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(modifier = Modifier.fillMaxWidth(), colors = nobelleCardColors(CardTone.Lilac)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Fasting", style = MaterialTheme.typography.titleMedium)
             when {
@@ -639,7 +641,7 @@ private fun HealthConnectCard(
     onAddManual: () -> Unit,
 ) {
     var showImportDetails by remember { mutableStateOf(false) }
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(modifier = Modifier.fillMaxWidth(), colors = nobelleCardColors(CardTone.Sky)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Health Connect", style = MaterialTheme.typography.titleMedium)
             when {
@@ -761,7 +763,7 @@ private fun ManualRecordsCard(
     onAdd: () -> Unit,
     onRequestDelete: (String) -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(modifier = Modifier.fillMaxWidth(), colors = nobelleCardColors(CardTone.Peach)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Manual records", style = MaterialTheme.typography.titleMedium)
             if (records.isEmpty()) {
@@ -939,7 +941,7 @@ private fun ManualMarkerSelector(
  */
 @Composable
 private fun StoredRecordsCard(summaries: List<MarkerSummary>) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(modifier = Modifier.fillMaxWidth(), colors = nobelleCardColors(CardTone.Rose)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Records on this device", style = MaterialTheme.typography.titleMedium)
             summaries.forEach { summary ->

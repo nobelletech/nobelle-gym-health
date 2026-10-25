@@ -1,21 +1,33 @@
 package com.nobelle.phone.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -44,10 +56,10 @@ import com.nobelle.phone.workout.WorkoutViewModel
 
 // Primary navigation (§3): Today | Coach | My Health | Progress | Profile
 enum class Destination(val route: String, val label: String, val icon: ImageVector) {
-    TODAY("today", "Today", Icons.Filled.Home),
-    COACH("coach", "Coach", Icons.Filled.Star),
+    TODAY("today", "Today", Icons.Filled.GridView),
+    COACH("coach", "Coach", Icons.Filled.FitnessCenter),
     HEALTH("health", "My Health", Icons.Filled.Favorite),
-    PROGRESS("progress", "Progress", Icons.Filled.DateRange),
+    PROGRESS("progress", "Progress", Icons.Filled.Leaderboard),
     PROFILE("profile", "Profile", Icons.Filled.Person),
 }
 
@@ -115,25 +127,71 @@ fun NobelleApp(
     val backStack by nav.currentBackStackEntryAsState()
     val current = backStack?.destination?.route
 
+    // Nobelle Health header + icon strip (Samsung Health-style): the app
+    // name sits above a pill row of section icons; the active section gets a
+    // filled accent disc. Sections are unlabeled icons — labels remain in
+    // each screen's own title for accessibility.
     Scaffold(
-        bottomBar = {
-            NavigationBar {
-                Destination.entries.forEach { d ->
-                    NavigationBarItem(
-                        selected = current == d.route,
-                        onClick = {
-                            nav.navigate(d.route) {
-                                popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
+        containerColor = MaterialTheme.colorScheme.surface,
+        topBar = {
+            Column(
+                modifier = Modifier.fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+            ) {
+                Text(
+                    "Nobelle Health",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Surface(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(4.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                    ) {
+                        Destination.entries.forEach { d ->
+                            val selected = current == d.route
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .background(
+                                        color = if (selected) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            androidx.compose.ui.graphics.Color.Transparent
+                                        },
+                                        shape = CircleShape,
+                                    )
+                                    .clickable {
+                                        nav.navigate(d.route) {
+                                            popUpTo(nav.graph.findStartDestination().id) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    },
+                                contentAlignment = androidx.compose.ui.Alignment.Center,
+                            ) {
+                                Icon(
+                                    d.icon,
+                                    contentDescription = d.label,
+                                    tint = if (selected) {
+                                        MaterialTheme.colorScheme.onPrimary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
+                                )
                             }
-                        },
-                        icon = { Icon(d.icon, contentDescription = d.label) },
-                        label = { Text(d.label) },
-                    )
+                        }
+                    }
                 }
             }
-        }
+        },
     ) { padding ->
         NavHost(
             navController = nav,

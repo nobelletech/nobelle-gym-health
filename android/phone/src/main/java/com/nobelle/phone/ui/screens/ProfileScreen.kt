@@ -38,6 +38,7 @@ fun ProfileScreen(
 
         InfoCard(
             title = "Google Drive",
+            tone = CardTone.Sky,
             body = "$driveStatus. Nobelle requests only the app-data permission; health permissions stay local and separate.",
             trailing = {
                 OutlinedButton(onClick = if (driveConnected) onDisconnectDrive else onConnectDrive) {
@@ -66,6 +67,7 @@ fun ProfileScreen(
         )
         InfoCard(
             title = "Media & licences",
+            tone = CardTone.Sand,
             body = "Where every demonstration, animation and voice comes from — nothing is assumed licence-free.",
             trailing = { OutlinedButton(onClick = { showMediaLicenses = true }) { Text("View") } },
         )

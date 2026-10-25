@@ -200,7 +200,7 @@ fun CoachScreen(
     ScreenColumn {
         ScreenTitle("Coach")
 
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(modifier = Modifier.fillMaxWidth(), colors = nobelleCardColors(CardTone.Peach)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Weekly plan", style = MaterialTheme.typography.titleMedium)
                 Text(
@@ -256,7 +256,7 @@ fun CoachScreen(
             trailing = { OutlinedButton(onClick = { libraryOpen = true }) { Text("Browse") } },
         )
 
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(modifier = Modifier.fillMaxWidth(), colors = nobelleCardColors(CardTone.Mint)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Templates", style = MaterialTheme.typography.titleMedium)
                 Text(
@@ -366,7 +366,7 @@ fun CoachScreen(
         }
 
         if (outdoor.sessions.isNotEmpty()) {
-            Card(modifier = Modifier.fillMaxWidth()) {
+            Card(modifier = Modifier.fillMaxWidth(), colors = nobelleCardColors(CardTone.Sky)) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Recent outdoor sessions", style = MaterialTheme.typography.titleMedium)
                     outdoor.sessions.take(10).forEach { session ->
