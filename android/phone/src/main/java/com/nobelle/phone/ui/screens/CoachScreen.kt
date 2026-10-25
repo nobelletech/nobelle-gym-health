@@ -25,10 +25,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -113,6 +116,11 @@ fun CoachScreen(
     onDismissPlanSuggestion: () -> Unit,
     onPlanSessionStatus: (planId: String, sessionId: String, status: PlannedSession.Status) -> Unit,
     onStartPlannedSession: (planId: String, sessionId: String) -> Unit,
+    onUpsertSession: (
+        planId: String, sessionId: String, localDate: String,
+        category: String, time: String?, templateId: String?,
+    ) -> Unit,
+    onRemoveSession: (planId: String, sessionId: String) -> Unit,
 ) {
     val context = LocalContext.current
     var showActivityPicker by remember { mutableStateOf(false) }
@@ -237,46 +245,97 @@ fun CoachScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
-                    var detailSession by remember { mutableStateOf<PlannedSession?>(null) }
-                    detailSession?.let { session ->
-                        PlanSessionDetailDialog(
-                            session = session,
-                            template = coach.templates.find { it.id == session.templateId },
-                            onStart = {
-                                detailSession = null
-                                onStartPlannedSession(plan.id, session.id)
+                    var editing by remember { mutableStateOf<DayEdit?>(null) }
+                    editing?.let { edit ->
+                        PlanSessionEditDialog(
+                            edit = edit,
+                            templates = coach.templates,
+                            onSave = { sessionId, category, time, templateId ->
+                                onUpsertSession(plan.id, sessionId, edit.date, category, time, templateId)
+                                editing = null
                             },
-                            onToggleSkip = {
-                                onPlanSessionStatus(
-                                    plan.id, session.id,
-                                    if (session.status == PlannedSession.Status.SKIPPED) {
-                                        PlannedSession.Status.PLANNED
-                                    } else {
-                                        PlannedSession.Status.SKIPPED
-                                    },
-                                )
-                                detailSession = null
+                            onDelete = edit.sessionId?.let { sid ->
+                                { onRemoveSession(plan.id, sid); editing = null }
                             },
-                            onDismiss = { detailSession = null },
+                            onDismiss = { editing = null },
                         )
                     }
-                    plan.plannedSessions.sortedBy { it.localDate }.forEach { session ->
-                        PlanSessionRow(
-                            session = session,
-                            template = coach.templates.find { it.id == session.templateId },
-                            onClick = { detailSession = session },
-                            onStart = { onStartPlannedSession(plan.id, session.id) },
-                            onToggleSkip = {
-                                onPlanSessionStatus(
-                                    plan.id, session.id,
-                                    if (session.status == PlannedSession.Status.SKIPPED) {
-                                        PlannedSession.Status.PLANNED
-                                    } else {
-                                        PlannedSession.Status.SKIPPED
+                    val weekStart = runCatching {
+                        java.time.LocalDate.parse(plan.weekStartDate)
+                    }.getOrNull()
+                    if (weekStart != null) {
+                        // Mon–Sun: every day is listed; days without a session
+                        // show an Add action so the week is fully editable.
+                        (0..6).forEach { offset ->
+                            val date = weekStart.plusDays(offset.toLong())
+                            val session = plan.plannedSessions
+                                .firstOrNull { it.localDate == date.toString() }
+                            if (session != null) {
+                                PlanSessionRow(
+                                    session = session,
+                                    onStart = { onStartPlannedSession(plan.id, session.id) },
+                                    onToggleSkip = {
+                                        onPlanSessionStatus(
+                                            plan.id, session.id,
+                                            if (session.status == PlannedSession.Status.SKIPPED) {
+                                                PlannedSession.Status.PLANNED
+                                            } else {
+                                                PlannedSession.Status.SKIPPED
+                                            },
+                                        )
+                                    },
+                                    onEdit = {
+                                        editing = DayEdit(
+                                            date = session.localDate,
+                                            sessionId = session.id,
+                                            category = session.category,
+                                            time = session.startTimeLocal ?: "",
+                                            templateId = session.templateId,
+                                        )
                                     },
                                 )
-                            },
-                        )
+                            } else {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                ) {
+                                    Text(
+                                        "${date.dayOfWeek.name.lowercase()
+                                            .replaceFirstChar { it.uppercase() }} $date",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                    )
+                                    TextButton(onClick = {
+                                        editing = DayEdit(date = date.toString())
+                                    }) { Text("Add") }
+                                }
+                            }
+                        }
+                    } else {
+                        plan.plannedSessions.sortedBy { it.localDate }.forEach { session ->
+                            PlanSessionRow(
+                                session = session,
+                                onStart = { onStartPlannedSession(plan.id, session.id) },
+                                onToggleSkip = {
+                                    onPlanSessionStatus(
+                                        plan.id, session.id,
+                                        if (session.status == PlannedSession.Status.SKIPPED) {
+                                            PlannedSession.Status.PLANNED
+                                        } else {
+                                            PlannedSession.Status.SKIPPED
+                                        },
+                                    )
+                                },
+                                onEdit = {
+                                    editing = DayEdit(
+                                        date = session.localDate,
+                                        sessionId = session.id,
+                                        category = session.category,
+                                        time = session.startTimeLocal ?: "",
+                                        templateId = session.templateId,
+                                    )
+                                },
+                            )
+                        }
                     }
                     if (plan.plannedSessions.isEmpty()) {
                         Text(
@@ -415,31 +474,177 @@ fun CoachScreen(
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Recent outdoor sessions", style = MaterialTheme.typography.titleMedium)
                     outdoor.sessions.take(10).forEach { session ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Column(Modifier.weight(1f)) {
-                                Text(
-                                    session.activity.replaceFirstChar { it.uppercase() },
-                                    style = MaterialTheme.typography.bodyLarge,
-                                )
-                                Text(
-                                    "${localDate(session.startedUtc)} · " +
-                                        "${formatKm(session.distanceMeters)} · " +
-                                        OutdoorTrackService.formatElapsed(session.durationSec) +
-                                        " · ${session.pointCount} points",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                            TextButton(onClick = { onDeleteOutdoor(session.id) }) { Text("Delete") }
-                        }
+                        OutdoorSessionRow(session = session, onDelete = { onDeleteOutdoor(session.id) })
                     }
                 }
             }
         }
     }
+}
+
+/**
+ * Samsung Health-style outdoor session card: steps/minutes/calorie metric
+ * rows with colored icon chips beside the tri-ring graphic. Steps and
+ * calories are honest estimates derived from recorded distance/duration —
+ * labeled "est." — pace uses the real recorded figures.
+ */
+@Composable
+private fun OutdoorSessionRow(session: OutdoorSession, onDelete: () -> Unit) {
+    val km = session.distanceMeters / 1000.0
+    val mins = session.durationSec / 60
+    val estSteps = (session.distanceMeters / 0.762).toInt() // ~avg stride length
+    val met = when (session.activity) {
+        OutdoorSession.ACTIVITY_RUN -> 9.8
+        OutdoorSession.ACTIVITY_CYCLE -> 7.5
+        else -> 3.5 // walk
+    }
+    val estCal = (met * 70.0 * session.durationSec / 3600.0).toInt() // 70kg reference
+    Column(Modifier.fillMaxWidth()) {
+        Text(
+            "${session.activity.replaceFirstChar { it.uppercase() }} · ${localDate(session.startedUtc)}",
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                MetricRow(
+                    icon = Icons.Filled.DirectionsWalk,
+                    tint = Color(0xFF1F6B3B),
+                    chip = Color(0xFFDFF3E4),
+                    value = "%,d".format(estSteps),
+                    label = "est. steps",
+                )
+                MetricRow(
+                    icon = Icons.Filled.Timer,
+                    tint = Color(0xFF1C4E80),
+                    chip = Color(0xFFDEEDFB),
+                    value = mins.toString(),
+                    label = "mins",
+                )
+                MetricRow(
+                    icon = Icons.Filled.LocalFireDepartment,
+                    tint = Color(0xFF8A4B1E),
+                    chip = Color(0xFFFEE8D4),
+                    value = estCal.toString(),
+                    label = "est. Cal",
+                )
+            }
+            SessionRingGraphic(modifier = Modifier.size(92.dp))
+        }
+        Text(
+            "${formatKm(session.distanceMeters)} · " +
+                OutdoorTrackService.formatElapsed(session.durationSec) +
+                " · ${session.pointCount} GPS points",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TextButton(onClick = onDelete) { Text("Delete") }
+    }
+}
+
+private data class DayEdit(
+    val date: String,
+    val sessionId: String? = null,
+    val category: String = "Strength",
+    val time: String = "",
+    val templateId: String? = null,
+)
+
+/** Add/edit a planned session: category, optional HH:mm start time, template. */
+@Composable
+private fun PlanSessionEditDialog(
+    edit: DayEdit,
+    templates: List<WorkoutTemplate>,
+    onSave: (sessionId: String, category: String, time: String?, templateId: String?) -> Unit,
+    onDelete: (() -> Unit)?,
+    onDismiss: () -> Unit,
+) {
+    var category by remember { mutableStateOf(edit.category) }
+    var time by remember { mutableStateOf(edit.time) }
+    var templateId by remember { mutableStateOf(edit.templateId) }
+    val weekday = runCatching {
+        java.time.LocalDate.parse(edit.date).dayOfWeek.name
+            .lowercase().replaceFirstChar { it.uppercase() }
+    }.getOrDefault(edit.date)
+    val timeValid = time.isBlank() ||
+        runCatching { java.time.LocalTime.parse(time.trim()) }.isSuccess
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (edit.sessionId == null) "Add session — $weekday" else "Edit session — $weekday") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = category,
+                    onValueChange = { category = it },
+                    label = { Text("Category (e.g. Strength, Cardio)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = time,
+                    onValueChange = { time = it },
+                    label = { Text("Start time (HH:mm, optional)") },
+                    placeholder = { Text("18:00") },
+                    isError = !timeValid,
+                    supportingText = {
+                        Text(
+                            if (timeValid) {
+                                "Reminders fire 1 hour and 30 minutes before — set the time to get them."
+                            } else {
+                                "Use 24-hour HH:mm format"
+                            },
+                        )
+                    },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (templates.isNotEmpty()) {
+                    Text("Template (optional)", style = MaterialTheme.typography.bodySmall)
+                    Row(
+                        Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        FilterChip(
+                            selected = templateId == null,
+                            onClick = { templateId = null },
+                            label = { Text("none") },
+                        )
+                        templates.forEach { t ->
+                            FilterChip(
+                                selected = templateId == t.id,
+                                onClick = { templateId = if (templateId == t.id) null else t.id },
+                                label = { Text(t.name) },
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onSave(
+                        edit.sessionId ?: java.util.UUID.randomUUID().toString(),
+                        category.trim().ifBlank { "Strength" },
+                        time.trim().ifBlank { null },
+                        templateId,
+                    )
+                },
+                enabled = category.isNotBlank() && timeValid,
+            ) { Text("Save") }
+        },
+        dismissButton = {
+            Row {
+                onDelete?.let { TextButton(onClick = it) { Text("Remove") } }
+                TextButton(onClick = onDismiss) { Text("Cancel") }
+            }
+        },
+    )
 }
 
 private data class DraftExercise(
@@ -941,71 +1146,32 @@ private fun formatKm(meters: Double): String =
 private fun localDate(instant: Instant): String =
     instant.toLocalDateTime(TimeZone.currentSystemDefault()).date.toString()
 
-/**
- * Permanent Samsung Health-style session card: metric rows with colored
- * icon chips on the left, tri-ring graphic on the right. Tap opens the
- * detail dialog; Start/Skip stay inline.
- */
 @Composable
 private fun PlanSessionRow(
     session: PlannedSession,
-    template: WorkoutTemplate?,
-    onClick: () -> Unit,
     onStart: () -> Unit,
     onToggleSkip: () -> Unit,
+    onEdit: () -> Unit,
 ) {
     val weekday = runCatching {
         java.time.LocalDate.parse(session.localDate).dayOfWeek.name
             .lowercase().replaceFirstChar { it.uppercase() }
     }.getOrDefault(session.localDate)
-    val exerciseCount = template?.exercises?.size
-    val totalSets = template?.exercises?.sumOf { it.sets }
-    val totalReps = template?.exercises?.sumOf { (it.reps ?: 0) * it.sets }
-        ?.takeIf { it > 0 }
-    Column(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text("$weekday ${session.localDate}", style = MaterialTheme.typography.titleMedium)
-        Text(
-            buildString {
-                append(session.category.replace('_', ' '))
-                session.location?.let { append(" · ${it.name.lowercase()}") }
-                append(" · ${session.status.name.lowercase()}")
-            },
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                MetricRow(
-                    icon = Icons.Filled.FitnessCenter,
-                    tint = Color(0xFF1F6B3B),
-                    chip = Color(0xFFDFF3E4),
-                    value = exerciseCount?.toString() ?: "—",
-                    label = "exercises",
-                )
-                MetricRow(
-                    icon = Icons.Filled.Repeat,
-                    tint = Color(0xFF1C4E80),
-                    chip = Color(0xFFDEEDFB),
-                    value = totalSets?.toString() ?: "—",
-                    label = "sets",
-                )
-                MetricRow(
-                    icon = Icons.Filled.Flag,
-                    tint = Color(0xFF8A4B1E),
-                    chip = Color(0xFFFEE8D4),
-                    value = totalReps?.toString() ?: "—",
-                    label = "target reps",
-                )
-            }
-            SessionRingGraphic(modifier = Modifier.size(92.dp))
+        Column(Modifier.weight(1f)) {
+            Text("$weekday ${session.localDate}", style = MaterialTheme.typography.bodyLarge)
+            Text(
+                buildString {
+                    append(session.category.replace('_', ' '))
+                    session.location?.let { append(" · ${it.name.lowercase()}") }
+                    append(" · ${session.status.name.lowercase()}")
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         Row {
             if (session.status == PlannedSession.Status.PLANNED) {
@@ -1016,103 +1182,9 @@ private fun PlanSessionRow(
                     Text(if (session.status == PlannedSession.Status.SKIPPED) "Unskip" else "Skip")
                 }
             }
+            TextButton(onClick = onEdit) { Text("Edit") }
         }
     }
-}
-
-/**
- * Samsung Health-style session detail: colored icon-metric rows on the
- * left, a decorative tri-ring graphic on the right. Shows only real plan
- * data — template exercise/set/rep targets when a template is linked.
- */
-@Composable
-private fun PlanSessionDetailDialog(
-    session: PlannedSession,
-    template: WorkoutTemplate?,
-    onStart: () -> Unit,
-    onToggleSkip: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val weekday = runCatching {
-        java.time.LocalDate.parse(session.localDate).dayOfWeek.name
-            .lowercase().replaceFirstChar { it.uppercase() }
-    }.getOrDefault(session.localDate)
-    val exerciseCount = template?.exercises?.size
-    val totalSets = template?.exercises?.sumOf { it.sets }
-    val totalReps = template?.exercises?.sumOf { (it.reps ?: 0) * it.sets }
-        ?.takeIf { it > 0 }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("$weekday ${session.localDate}") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    buildString {
-                        append(session.category.replace('_', ' '))
-                        session.location?.let { append(" · ${it.name.lowercase()}") }
-                        append(" · ${session.status.name.lowercase()}")
-                        template?.let { append(" · from ${it.name}") }
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        MetricRow(
-                            icon = Icons.Filled.FitnessCenter,
-                            tint = Color(0xFF1F6B3B),
-                            chip = Color(0xFFDFF3E4),
-                            value = exerciseCount?.toString() ?: "—",
-                            label = "exercises",
-                        )
-                        MetricRow(
-                            icon = Icons.Filled.Repeat,
-                            tint = Color(0xFF1C4E80),
-                            chip = Color(0xFFDEEDFB),
-                            value = totalSets?.toString() ?: "—",
-                            label = "sets",
-                        )
-                        MetricRow(
-                            icon = Icons.Filled.Flag,
-                            tint = Color(0xFF8A4B1E),
-                            chip = Color(0xFFFEE8D4),
-                            value = totalReps?.toString() ?: "—",
-                            label = "target reps",
-                        )
-                    }
-                    SessionRingGraphic(modifier = Modifier.size(120.dp))
-                }
-                if (template == null) {
-                    Text(
-                        "No template linked — Start opens a blank ${session.category.lowercase()} session.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            if (session.status == PlannedSession.Status.PLANNED) {
-                Button(onClick = onStart) { Text("Start") }
-            }
-        },
-        dismissButton = {
-            Row {
-                if (session.status != PlannedSession.Status.COMPLETED) {
-                    TextButton(onClick = onToggleSkip) {
-                        Text(if (session.status == PlannedSession.Status.SKIPPED) "Unskip" else "Skip")
-                    }
-                }
-                TextButton(onClick = onDismiss) { Text("Close") }
-            }
-        },
-    )
 }
 
 @Composable

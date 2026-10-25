@@ -207,6 +207,46 @@ class CoachViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
+    /** Adds or replaces a planned session (day, category, optional HH:mm time). */
+    fun upsertPlannedSession(
+        planId: String,
+        sessionId: String,
+        localDate: String,
+        category: String,
+        startTimeLocal: String?,
+        templateId: String?,
+    ) = mutate { owner ->
+        val repo = plans ?: return@mutate INIT_ERROR
+        val plan = repo.get(owner, planId) ?: return@mutate "Plan not found"
+        val existing = plan.plannedSessions.firstOrNull { it.id == sessionId }
+        val session = (existing ?: PlannedSession(
+            id = sessionId,
+            ownerUID = plan.ownerUID,
+            localDate = localDate,
+            templateId = null,
+            category = category,
+        )).copy(
+            category = category,
+            startTimeLocal = startTimeLocal?.ifBlank { null },
+            templateId = templateId,
+            revision = (existing?.revision ?: 0) + 1,
+        )
+        val sessions = plan.plannedSessions
+            .filter { it.id != sessionId } + session
+        repo.upsert(owner, plan.copy(plannedSessions = sessions, revision = plan.revision + 1))
+        if (existing == null) "Session added to the plan" else "Session updated"
+    }
+
+    /** Removes a planned session from the week. */
+    fun removePlannedSession(planId: String, sessionId: String) = mutate { owner ->
+        val repo = plans ?: return@mutate INIT_ERROR
+        val plan = repo.get(owner, planId) ?: return@mutate "Plan not found"
+        if (plan.plannedSessions.none { it.id == sessionId }) return@mutate "Session not found"
+        val sessions = plan.plannedSessions.filter { it.id != sessionId }
+        repo.upsert(owner, plan.copy(plannedSessions = sessions, revision = plan.revision + 1))
+        "Session removed from the plan"
+    }
+
     /**
      * Starts the planned session: from its template when it has one, else a
      * blank session in the planned category. Starting counts as completing
@@ -279,6 +319,7 @@ class CoachViewModel(application: Application) : AndroidViewModel(application) {
             if (generation != selectionGeneration || selectedOwner?.uid != owner.uid) return@launch
             val list = runCatching { templates?.list(owner) }.getOrNull() ?: emptyList()
             val plan = loadPlan(owner)
+            runCatching { PlanReminders.sync(app, plan) }
             mutableState.value = mutableState.value.copy(
                 loading = false,
                 templates = list,

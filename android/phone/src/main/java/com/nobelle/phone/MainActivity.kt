@@ -160,6 +160,8 @@ class MainActivity : ComponentActivity() {
                         coachModel.startPlannedSession(planId, sessionId)
                         workoutModel.selectOwner(driveAuthModel.ownerId.value)
                     },
+                    onUpsertSession = coachModel::upsertPlannedSession,
+                    onRemoveSession = coachModel::removePlannedSession,
                     // Re-running each ViewModel's owner-selection path is the
                     // existing reload: same owner keeps state, stores re-read.
                     onProgressRefresh = {

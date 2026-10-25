@@ -121,6 +121,8 @@ fun NobelleApp(
     onDismissPlanSuggestion: () -> Unit,
     onPlanSessionStatus: (String, String, PlannedSession.Status) -> Unit,
     onStartPlannedSession: (String, String) -> Unit,
+    onUpsertSession: (String, String, String, String, String?, String?) -> Unit,
+    onRemoveSession: (String, String) -> Unit,
     onProgressRefresh: () -> Unit,
 ) {
     val nav = rememberNavController()
@@ -235,6 +237,8 @@ fun NobelleApp(
                     onDismissPlanSuggestion = onDismissPlanSuggestion,
                     onPlanSessionStatus = onPlanSessionStatus,
                     onStartPlannedSession = onStartPlannedSession,
+                    onUpsertSession = onUpsertSession,
+                    onRemoveSession = onRemoveSession,
                 )
             }
             composable(Destination.HEALTH.route) {

@@ -76,6 +76,8 @@ data class PlannedSession(
     val templateId: String?,
     val category: String,
     val location: Location? = null,
+    /** Optional local start time "HH:mm" — drives reminder notifications. */
+    val startTimeLocal: String? = null,
     val status: Status = Status.PLANNED,
     val revision: Long = 1,
 ) {
