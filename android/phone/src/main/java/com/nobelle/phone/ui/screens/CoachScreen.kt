@@ -263,6 +263,7 @@ fun CoachScreen(
                     plan.plannedSessions.sortedBy { it.localDate }.forEach { session ->
                         PlanSessionRow(
                             session = session,
+                            template = coach.templates.find { it.id == session.templateId },
                             onClick = { detailSession = session },
                             onStart = { onStartPlannedSession(plan.id, session.id) },
                             onToggleSkip = {
@@ -940,9 +941,15 @@ private fun formatKm(meters: Double): String =
 private fun localDate(instant: Instant): String =
     instant.toLocalDateTime(TimeZone.currentSystemDefault()).date.toString()
 
+/**
+ * Permanent Samsung Health-style session card: metric rows with colored
+ * icon chips on the left, tri-ring graphic on the right. Tap opens the
+ * detail dialog; Start/Skip stay inline.
+ */
 @Composable
 private fun PlanSessionRow(
     session: PlannedSession,
+    template: WorkoutTemplate?,
     onClick: () -> Unit,
     onStart: () -> Unit,
     onToggleSkip: () -> Unit,
@@ -951,21 +958,54 @@ private fun PlanSessionRow(
         java.time.LocalDate.parse(session.localDate).dayOfWeek.name
             .lowercase().replaceFirstChar { it.uppercase() }
     }.getOrDefault(session.localDate)
-    Row(
+    val exerciseCount = template?.exercises?.size
+    val totalSets = template?.exercises?.sumOf { it.sets }
+    val totalReps = template?.exercises?.sumOf { (it.reps ?: 0) * it.sets }
+        ?.takeIf { it > 0 }
+    Column(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Column(Modifier.weight(1f)) {
-            Text("$weekday ${session.localDate}", style = MaterialTheme.typography.bodyLarge)
-            Text(
-                buildString {
-                    append(session.category.replace('_', ' '))
-                    session.location?.let { append(" · ${it.name.lowercase()}") }
-                    append(" · ${session.status.name.lowercase()}")
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        Text("$weekday ${session.localDate}", style = MaterialTheme.typography.titleMedium)
+        Text(
+            buildString {
+                append(session.category.replace('_', ' '))
+                session.location?.let { append(" · ${it.name.lowercase()}") }
+                append(" · ${session.status.name.lowercase()}")
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                MetricRow(
+                    icon = Icons.Filled.FitnessCenter,
+                    tint = Color(0xFF1F6B3B),
+                    chip = Color(0xFFDFF3E4),
+                    value = exerciseCount?.toString() ?: "—",
+                    label = "exercises",
+                )
+                MetricRow(
+                    icon = Icons.Filled.Repeat,
+                    tint = Color(0xFF1C4E80),
+                    chip = Color(0xFFDEEDFB),
+                    value = totalSets?.toString() ?: "—",
+                    label = "sets",
+                )
+                MetricRow(
+                    icon = Icons.Filled.Flag,
+                    tint = Color(0xFF8A4B1E),
+                    chip = Color(0xFFFEE8D4),
+                    value = totalReps?.toString() ?: "—",
+                    label = "target reps",
+                )
+            }
+            SessionRingGraphic(modifier = Modifier.size(92.dp))
         }
         Row {
             if (session.status == PlannedSession.Status.PLANNED) {
