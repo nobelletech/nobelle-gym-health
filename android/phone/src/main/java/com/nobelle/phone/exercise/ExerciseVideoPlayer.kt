@@ -2,6 +2,7 @@ package com.nobelle.phone.exercise
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -57,14 +58,27 @@ fun ExerciseVideoPlayer(file: File, modifier: Modifier = Modifier) {
             modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f),
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = { player.playWhenReady = !player.playWhenReady }) {
-                Text(if (player.playWhenReady) "Pause" else "Play")
+            val tight = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+            OutlinedButton(
+                onClick = { player.playWhenReady = !player.playWhenReady },
+                modifier = Modifier.weight(1f),
+                contentPadding = tight,
+            ) {
+                Text(if (player.playWhenReady) "Pause" else "Play", maxLines = 1)
             }
-            OutlinedButton(onClick = { player.seekTo(0) }) { Text("Replay") }
-            OutlinedButton(onClick = {
-                muted = !muted
-                player.volume = if (muted) 0f else 1f
-            }) { Text(if (muted) "Unmute" else "Mute") }
+            OutlinedButton(
+                onClick = { player.seekTo(0) },
+                modifier = Modifier.weight(1f),
+                contentPadding = tight,
+            ) { Text("Replay", maxLines = 1) }
+            OutlinedButton(
+                onClick = {
+                    muted = !muted
+                    player.volume = if (muted) 0f else 1f
+                },
+                modifier = Modifier.weight(1f),
+                contentPadding = tight,
+            ) { Text(if (muted) "Unmute" else "Mute", maxLines = 1) }
         }
     }
 }
