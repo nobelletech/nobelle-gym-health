@@ -14,6 +14,7 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -35,6 +36,12 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
+
+    testOptions {
+        // Robolectric unit tests need merged app+library resources (the
+        // bundled exercise catalog JSON lives in :android:core-coaching).
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 dependencies {
@@ -56,4 +63,21 @@ dependencies {
     implementation(libs.lifecycle.viewmodel.compose)
 
     testImplementation(libs.junit)
+    // Compose preview tests run on the JVM via Robolectric: the on-watch
+    // compose-test harness cannot observe the hierarchy in a ScalingLazyColumn
+    // world (see WearExercisePreviewTest), and the continuous figure animation
+    // never idles. Robolectric gives the same assertions deterministically.
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.junit)
+    testImplementation(libs.activity.compose)
+
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.junit)
+    debugImplementation(libs.compose.ui.test.manifest)
 }

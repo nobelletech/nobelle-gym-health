@@ -25,6 +25,7 @@ kotlinxSerialization = "1.8.1"
 kotlinxDatetime = "0.6.2"
 media3 = "1.6.1"
 junit = "4.13.2"
+robolectric = "4.14.1"
 androidxJunit = "1.2.1"
 espresso = "3.6.1"
 googleDriveApi = "v3-rev20250511-2.0.0"
@@ -37,6 +38,8 @@ compose-foundation = { group = "androidx.compose.foundation", name = "foundation
 compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 compose-material-icons = { group = "androidx.compose.material", name = "material-icons-extended" }
 activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
@@ -84,6 +87,7 @@ media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", versi
 media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "media3" }
 
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxJunit" }
 androidx-test-core = { group = "androidx.test", name = "core", version = "1.6.1" }
 androidx-test-runner = { group = "androidx.test", name = "runner", version = "1.6.2" }

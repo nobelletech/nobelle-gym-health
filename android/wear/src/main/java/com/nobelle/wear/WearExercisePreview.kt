@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
@@ -83,7 +84,7 @@ fun WearExercisePreview(onBack: () -> Unit) {
 }
 
 @Composable
-private fun WearExerciseDetailPager(
+internal fun WearExerciseDetailPager(
     exercises: List<ExerciseDefinition>,
     initialPage: Int,
     onBack: () -> Unit,
@@ -96,7 +97,7 @@ private fun WearExerciseDetailPager(
 }
 
 @Composable
-private fun WearExerciseDetail(exercise: ExerciseDefinition) {
+internal fun WearExerciseDetail(exercise: ExerciseDefinition) {
     var playing by remember { mutableStateOf(true) }
     ScalingLazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -113,7 +114,13 @@ private fun WearExerciseDetail(exercise: ExerciseDefinition) {
             ExerciseFigure(
                 primitive = exercise.motion,
                 animated = playing,
-                modifier = Modifier.size(110.dp).clickable { playing = !playing },
+                // Wear Material3's content colour lives in a different
+                // composition local than compose.material3's — pass it
+                // explicitly so the figure isn't drawn black-on-black.
+                figureColor = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(110.dp)
+                    .testTag("exercise-figure")
+                    .clickable { playing = !playing },
             )
         }
         item {

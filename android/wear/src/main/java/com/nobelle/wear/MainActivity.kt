@@ -43,13 +43,16 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Deep link: opens the exercise preview directly (used by on-device
+        // verification and future notifications/tiles).
+        val openPreview = intent.getBooleanExtra(EXTRA_OPEN_PREVIEW, false)
         setContent {
             WearTheme {
                 val state by model.state.collectAsStateWithLifecycle()
                 val enroll by model.enrollState.collectAsStateWithLifecycle()
                 val enrollMessage by model.enrollMessage.collectAsStateWithLifecycle()
                 val workout by model.workout.collectAsStateWithLifecycle()
-                var showExercisePreview by remember { mutableStateOf(false) }
+                var showExercisePreview by remember { mutableStateOf(openPreview) }
                 if (showExercisePreview) {
                     WearExercisePreview(onBack = { showExercisePreview = false })
                 } else {
@@ -413,3 +416,6 @@ private fun elapsedClock(elapsedMs: Long): String {
         "%02d:%02d".format(minutes, seconds)
     }
 }
+
+/** Intent extra: open the exercise preview on launch (verification deep link). */
+const val EXTRA_OPEN_PREVIEW = "com.nobelle.wear.extra.OPEN_PREVIEW"
