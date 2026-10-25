@@ -4,11 +4,16 @@ import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -17,9 +22,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +49,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -54,6 +73,7 @@ import com.nobelle.core.model.OutdoorSession
 import com.nobelle.core.model.PlannedSession
 import com.nobelle.core.model.TemplateExercise
 import com.nobelle.core.model.TrainingPlan
+import com.nobelle.core.model.WorkoutTemplate
 import com.nobelle.phone.coach.CoachViewModel
 import com.nobelle.phone.exercise.ExerciseNarrator
 import com.nobelle.phone.exercise.ExerciseVideoPlayer
@@ -217,9 +237,33 @@ fun CoachScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
+                    var detailSession by remember { mutableStateOf<PlannedSession?>(null) }
+                    detailSession?.let { session ->
+                        PlanSessionDetailDialog(
+                            session = session,
+                            template = coach.templates.find { it.id == session.templateId },
+                            onStart = {
+                                detailSession = null
+                                onStartPlannedSession(plan.id, session.id)
+                            },
+                            onToggleSkip = {
+                                onPlanSessionStatus(
+                                    plan.id, session.id,
+                                    if (session.status == PlannedSession.Status.SKIPPED) {
+                                        PlannedSession.Status.PLANNED
+                                    } else {
+                                        PlannedSession.Status.SKIPPED
+                                    },
+                                )
+                                detailSession = null
+                            },
+                            onDismiss = { detailSession = null },
+                        )
+                    }
                     plan.plannedSessions.sortedBy { it.localDate }.forEach { session ->
                         PlanSessionRow(
                             session = session,
+                            onClick = { detailSession = session },
                             onStart = { onStartPlannedSession(plan.id, session.id) },
                             onToggleSkip = {
                                 onPlanSessionStatus(
@@ -899,6 +943,7 @@ private fun localDate(instant: Instant): String =
 @Composable
 private fun PlanSessionRow(
     session: PlannedSession,
+    onClick: () -> Unit,
     onStart: () -> Unit,
     onToggleSkip: () -> Unit,
 ) {
@@ -907,7 +952,7 @@ private fun PlanSessionRow(
             .lowercase().replaceFirstChar { it.uppercase() }
     }.getOrDefault(session.localDate)
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Column(Modifier.weight(1f)) {
@@ -932,6 +977,162 @@ private fun PlanSessionRow(
                 }
             }
         }
+    }
+}
+
+/**
+ * Samsung Health-style session detail: colored icon-metric rows on the
+ * left, a decorative tri-ring graphic on the right. Shows only real plan
+ * data — template exercise/set/rep targets when a template is linked.
+ */
+@Composable
+private fun PlanSessionDetailDialog(
+    session: PlannedSession,
+    template: WorkoutTemplate?,
+    onStart: () -> Unit,
+    onToggleSkip: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val weekday = runCatching {
+        java.time.LocalDate.parse(session.localDate).dayOfWeek.name
+            .lowercase().replaceFirstChar { it.uppercase() }
+    }.getOrDefault(session.localDate)
+    val exerciseCount = template?.exercises?.size
+    val totalSets = template?.exercises?.sumOf { it.sets }
+    val totalReps = template?.exercises?.sumOf { (it.reps ?: 0) * it.sets }
+        ?.takeIf { it > 0 }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("$weekday ${session.localDate}") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    buildString {
+                        append(session.category.replace('_', ' '))
+                        session.location?.let { append(" · ${it.name.lowercase()}") }
+                        append(" · ${session.status.name.lowercase()}")
+                        template?.let { append(" · from ${it.name}") }
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        MetricRow(
+                            icon = Icons.Filled.FitnessCenter,
+                            tint = Color(0xFF1F6B3B),
+                            chip = Color(0xFFDFF3E4),
+                            value = exerciseCount?.toString() ?: "—",
+                            label = "exercises",
+                        )
+                        MetricRow(
+                            icon = Icons.Filled.Repeat,
+                            tint = Color(0xFF1C4E80),
+                            chip = Color(0xFFDEEDFB),
+                            value = totalSets?.toString() ?: "—",
+                            label = "sets",
+                        )
+                        MetricRow(
+                            icon = Icons.Filled.Flag,
+                            tint = Color(0xFF8A4B1E),
+                            chip = Color(0xFFFEE8D4),
+                            value = totalReps?.toString() ?: "—",
+                            label = "target reps",
+                        )
+                    }
+                    SessionRingGraphic(modifier = Modifier.size(120.dp))
+                }
+                if (template == null) {
+                    Text(
+                        "No template linked — Start opens a blank ${session.category.lowercase()} session.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            if (session.status == PlannedSession.Status.PLANNED) {
+                Button(onClick = onStart) { Text("Start") }
+            }
+        },
+        dismissButton = {
+            Row {
+                if (session.status != PlannedSession.Status.COMPLETED) {
+                    TextButton(onClick = onToggleSkip) {
+                        Text(if (session.status == PlannedSession.Status.SKIPPED) "Unskip" else "Skip")
+                    }
+                }
+                TextButton(onClick = onDismiss) { Text("Close") }
+            }
+        },
+    )
+}
+
+@Composable
+private fun MetricRow(
+    icon: ImageVector,
+    tint: Color,
+    chip: Color,
+    value: String,
+    label: String,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier.size(34.dp).background(chip, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
+        }
+        Spacer(Modifier.size(10.dp))
+        Text(value, style = MaterialTheme.typography.titleLarge)
+        Spacer(Modifier.size(4.dp))
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/**
+ * Decorative tri-ring (green/blue/purple arcs) with a heart — echoes the
+ * Samsung Health activity graphic. No data is encoded in the arcs.
+ */
+@Composable
+private fun SessionRingGraphic(modifier: Modifier = Modifier) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val stroke = Stroke(width = size.minDimension * 0.06f, cap = StrokeCap.Round)
+            val gap = size.minDimension * 0.09f
+            val colors = listOf(
+                Color(0xFF9CCC65), Color(0xFF64B5F6), Color(0xFFBA68C8),
+            )
+            colors.forEachIndexed { i, c ->
+                val inset = gap * i + stroke.width / 2f
+                drawArc(
+                    color = c,
+                    startAngle = -90f + i * 25f,
+                    sweepAngle = 300f - i * 30f,
+                    useCenter = false,
+                    topLeft = Offset(inset, inset),
+                    size = Size(size.width - inset * 2, size.height - inset * 2),
+                    style = stroke,
+                )
+            }
+        }
+        Icon(
+            Icons.Filled.FavoriteBorder,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(40.dp),
+        )
     }
 }
 
