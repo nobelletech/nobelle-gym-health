@@ -106,7 +106,7 @@ fun MyHealthScreen(
     }
 
     ScreenColumn {
-        ScreenTitle("My Health")
+        ScreenTitle("Nobelle Health")
 
         MarkerGroup.entries.forEach { group ->
             val groupMarkers = healthConnect.storedSummaries.filter { it.group == group }

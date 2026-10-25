@@ -140,7 +140,7 @@ fun NobelleApp(
                     .padding(horizontal = 20.dp, vertical = 8.dp),
             ) {
                 Text(
-                    "Nobelle Health",
+                    "Nobelle",
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
